@@ -133,6 +133,15 @@ export function matchNumberAt(text, pos) {
   return { text: str, tags };
 }
 
+/** 引號區間（含引號本身）。 */
+export function quoteRanges(text) {
+  const out = [];
+  const re = /「[^」]*」|『[^』]*』|“[^”]*”/g;
+  let m;
+  while ((m = re.exec(text))) out.push([m.index, m.index + m[0].length]);
+  return out;
+}
+
 /** 抽出全文中的數字 span。 */
 export function extractNumbers(text) {
   const out = [];
@@ -291,6 +300,9 @@ export function tokenize(text, lex = emptyLexicon(), opts = {}) {
   }
 
   const tokens = [...special, ...fill].sort((a, b) => a.start - b.start);
+  // 引號裡多半是別人說的話或想像的台詞，標成 QUOTED，整理時不當成使用者自己的想法。
+  const quotes = quoteRanges(text);
+  for (const t of tokens) if (quotes.some(([a, b]) => t.start >= a && t.end <= b)) t.tags.push('QUOTED');
   return {
     text,
     sentences,

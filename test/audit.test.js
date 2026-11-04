@@ -123,3 +123,31 @@ test('Segmenter 關閉時仍可運作', () => {
   const r = audit('我想要升遷，但是我也想準時下班。', emptyState(), { useSegmenter: false });
   assert.equal(r.clarify.stuck.kind, 'CONFLICT');
 });
+
+test('回歸：長篇敘述（使用者回報）——不湊錯想要，抓到「知道卻做不到」，並顯示安全提示', async () => {
+  const { readFileSync } = await import('node:fs');
+  const text = readFileSync(new URL('./fixtures/long-case.txt', import.meta.url), 'utf8');
+  const r = audit(text);
+  const cl = r.clarify;
+  assert.equal(r.safety.level, 'concern');
+  assert.match(r.safety.quote, /期待受傷/);
+  assert.equal(cl.draft.filled.W, false, `不該有想要：${cl.draft.parts.W}`);
+  assert.ok(!cl.slots.WANT.some((x) => /抽自己|晚餐|採買/.test(x.text)));
+  assert.notEqual(cl.stuck.kind, 'CONFLICT');
+  assert.equal(cl.stuck.kind, 'KNOW_BUT_CANT');
+  assert.match(cl.draft.parts.B, /沒辦法開口/);
+  assert.ok(cl.slots.WORRY.some((x) => x.text.includes('怎麼辦')));
+  assert.equal(r.questions.length, 1);
+  assert.deepEqual(unexplainedOutputs(r), []);
+});
+
+test('安全提示：寫到想結束生命時這一輪不追問', () => {
+  const r = audit('我真的撐不下去了，有時候覺得不如死了算了。');
+  assert.equal(r.safety.level, 'high');
+  assert.equal(r.safety.paused, true);
+  assert.equal(r.questions.length, 0);
+});
+
+test('安全提示：一般困擾不顯示', () => {
+  assert.equal(audit('我想要升遷，但是我也想準時下班。').safety, null);
+});

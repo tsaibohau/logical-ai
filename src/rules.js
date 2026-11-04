@@ -376,12 +376,13 @@ export function GOAL_CONFLICT(tokens, sentences) {
   };
   for (const para of paragraphs(sentences)) {
     const pt = para.flatMap((s) => bs.get(s.idx) || []);
-    const goals = pt.filter((t) => has(t, 'GOAL'));
+    const goals = pt.filter((t) => has(t, 'GOAL') && !has(t, 'QUOTED'));
     const contrasts = pt.filter((t) => has(t, 'CONTRAST'));
     if (goals.length < 2 || !contrasts.length) continue;
     for (let i = 0; i + 1 < goals.length; i++) {
       const g1 = goals[i];
       const g2 = goals[i + 1];
+      if (g2.sentIdx - g1.sentIdx > 1) continue; // 相隔太遠的兩個想要不湊成一對
       const k = contrasts.find((t) => t.start >= g1.end && t.end <= g2.start);
       if (!k) continue;
       const A = target(g1, k.sentIdx === g1.sentIdx ? k.start : null);

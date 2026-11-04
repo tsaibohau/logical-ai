@@ -62,7 +62,8 @@ export function marksFromResult(result) {
   const marks = [];
   for (const t of result.trace || []) {
     for (const s of t.spans) {
-      if (t.section === 'slot') marks.push({ ...s, cls: SLOT_CLS[t.ruleId], title: RULE_LABELS[t.ruleId] });
+      if (t.section === 'safety') marks.push({ ...s, cls: 'm-feeling', title: '安全提示' });
+      else if (t.section === 'slot') marks.push({ ...s, cls: SLOT_CLS[t.ruleId], title: RULE_LABELS[t.ruleId] });
       else if (t.section === 'defined') marks.push({ ...s, cls: 'm-defined', title: `已定義：${t.def}` });
     }
   }
@@ -183,7 +184,9 @@ function init(doc, win) {
       const sec = el('div', 'slot');
       sec.append(el('h3', null, labels[k]));
       const ul = el('ul');
-      for (const it of items) ul.append(el('li', null, it.text));
+      // 長文時每格只列前三句，其餘收起來。
+      for (const it of items.slice(0, 3)) ul.append(el('li', null, it.text));
+      if (items.length > 3) ul.append(el('li', 'more', `還有 ${items.length - 3} 句`));
       sec.append(ul);
       list.append(sec);
     }
@@ -197,6 +200,15 @@ function init(doc, win) {
     if (!cl) { section.hidden = true; return; }
     section.hidden = false;
     $('restartBtn').hidden = false;
+
+    const sf = result.safety;
+    $('safetyBlock').hidden = !sf;
+    if (sf) {
+      $('safetyQuote').textContent = sf.quote;
+      $('safetyBody').textContent = sf.body;
+      $('safetyPaused').hidden = !sf.paused;
+      $('safetyPaused').textContent = sf.paused ? templates.safety.paused : '';
+    }
 
     $('draft').innerHTML = draftHtml(cl.draft.text);
     const dn = $('draftNote');

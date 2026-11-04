@@ -7,6 +7,7 @@ import { pickSkeleton } from './skeleton.js';
 import { renderTemplate } from './questions.js';
 import { detectBlindspot } from './blindspots.js';
 import { clarify, SLOTS as SLOT_KEYS } from './clarify.js';
+import { detectSafety } from './safety.js';
 import { templates } from './data.js';
 
 /** 本輪出現過、且帶類別的詞 -> 類別（供下一輪比對）。 */
@@ -66,6 +67,7 @@ export function audit(input, userState = emptyState(), opts = {}) {
     blindspot: null,
     blindspotText: '',
     clarify: null,
+    safety: null,
     trace: [],
     wordTags: {},
     crossTurn: [],
@@ -80,8 +82,9 @@ export function audit(input, userState = emptyState(), opts = {}) {
   const selected = selectFindings(findings, CONFIG);
   const skeleton = pickSkeleton(body, tk.tokens, tk.sentences);
   const blindspot = detectBlindspot(body, tk.tokens);
+  const safety = detectSafety(body);
   const cl = clarify({
-    body, tokens: tk.tokens, sentences: tk.sentences, findings, skeleton, blindspot,
+    body, tokens: tk.tokens, sentences: tk.sentences, findings, skeleton, blindspot, safety,
     prev: opts.previous ? opts.previous.clarify : null,
   });
   // 對外只問一題：由 clarify 決定（卡點、補空格、盲點或確認）。
@@ -96,6 +99,7 @@ export function audit(input, userState = emptyState(), opts = {}) {
   result.questions = questions;
   result.blindspot = blindspot;
   result.clarify = cl;
+  result.safety = safety;
   result.blindspotText = blindspot ? '' : templates.noBlindspot;
   result.wordTags = wordTags;
   result.crossTurn = compareTurns(opts.previous, wordTags, messages);
@@ -105,6 +109,7 @@ export function audit(input, userState = emptyState(), opts = {}) {
     ...selected.map((f) => ({ section: 'clue', ruleId: f.ruleId, severity: f.severity, spans: f.spans })),
     ...SLOT_KEYS.flatMap((k) => cl.current[k].map((it) => ({ section: 'slot', ruleId: k, spans: [{ start: it.start, end: it.end, text: it.text }] }))),
     ...(cl.stuck && cl.stuck.spans.length ? [{ section: 'stuck', ruleId: cl.stuck.kind, spans: cl.stuck.spans.map((x) => ({ start: x.start, end: x.end, text: x.text })) }] : []),
+    ...(safety ? [{ section: 'safety', ruleId: `SAFETY_${safety.level.toUpperCase()}`, spans: safety.spans }] : []),
     ...(cl.question ? [{ section: 'question', ruleId: cl.question.id, templateId: cl.question.templateId, spans: cl.question.spans }] : []),
     ...tk.tokens.filter((t) => t.tags.includes('DEFINED')).map((t) => ({
       section: 'defined', ruleId: 'DEFINED', spans: [{ start: t.start, end: t.end, text: t.text }], def: t.def,

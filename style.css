@@ -146,3 +146,7 @@ mark.m-flaw.m-question { background: linear-gradient(var(--m-flaw), var(--m-ques
 .history-item .q { color: var(--fg); }
 .slot h3 { margin: 12px 0 4px; font-size: .9rem; color: var(--muted); }
 .slot ul { margin: 0; padding-left: 1.2em; }
+
+.safety { border: 2px solid var(--danger); }
+.safety p { margin: 0 0 6px; }
+.slot .more { color: var(--muted); list-style: none; margin-left: -1.2em; font-size: .85rem; }

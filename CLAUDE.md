@@ -17,6 +17,8 @@
 
 ## 鐵則（違反任何一條都算失敗）
 
+0. **安全例外（優先於下面所有規則）。** 原文出現傷害自己、期待受傷、撐不下去、想結束生命等字句時（`src/safety.js`），在最上方顯示固定的求助資訊（安心專線 1925、生命線 1995、張老師 1980、119）。這是唯一允許出現「非使用者原文」與「建議」的地方，內容固定在 `data/templates.json` 的 `safety`，不得隨原文改寫。寫到想結束生命（high）時，這一輪不追問。不要為了減少誤報而移除字詞；寧可多顯示，不可漏掉。
+
 1. **零網路、零 API、零外部資料。** `src/` 不得出現 `fetch(`、`XMLHttpRequest`、`WebSocket` 等。資料只能透過 `src/data.js` 的 JSON module 靜態載入。
 2. **輸出只能是「模板固定字串 + 使用者原文片段」。** 不得寫入使用者沒寫過的人事物或常識判斷。新增模板放 `data/templates.json`，欄位 `{X}` 等只能填原文子字串；`{D}` 填使用者 `/def` 寫下的定義。
 3. **不給建議、行動清單，不寒暄、不安慰、不稱讚。**
@@ -32,7 +34,8 @@
 - `src/rules.js`：8 條規則（第 8 條 `DEF_MISMATCH` 是使用者回報後加的），每條 `(tokens, sentences, state) -> Finding[]`。門檻與權重都在 `CONFIG`。
 - `src/skeleton.js`、`src/questions.js`：骨架與斷點提問。
 - `src/blindspots.js`：盲點，只看原文有沒有寫到代價、改變條件、反方向理由。
-- `src/clarify.js`：五格分類、草稿、卡點（由線索轉換）、提問優先序與多輪累積。
+- `src/clarify.js`：五格分類、草稿、卡點（由線索轉換，或句型「明明知道…但…」）、提問優先序與多輪累積。引號裡的字（別人說的話）不當成使用者的想法，但引號裡的「如果…怎麼辦」算擔心。
+- `src/safety.js`：安全提示偵測（見鐵則 0）。
 - `src/ui.js`：上半部是可測試的純函式，`init()` 只在瀏覽器執行。
 - `data/lexicon.json` 類別固定為 10 類；`data/observable.json` 是輔助字表（不能 /tag）。
 
@@ -46,6 +49,7 @@ node eval/run.js   # 產生 eval/report.md
 守門測試：
 - `test/guard-no-network.test.js`：stub 掉 fetch/XHR/WebSocket 後跑 audit，必須零呼叫。
 - `test/guard-no-external-words.test.js`：gold 每筆的草稿、卡點、提問都要能由模板 + 原文片段反推。
+- `test/fixtures/long-case.txt`：使用者回報的長篇真實風格敘述，`test/audit.test.js` 有對應的回歸測試。
 
 改規則或詞典後，兩者都要跑。`eval/gold.json` 目前是合成資料（`labeled_by: "draft"`），數字不代表真實準確度；不要為了讓 eval 數字好看而對 gold 過度調參。
 
