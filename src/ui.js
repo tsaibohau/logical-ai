@@ -201,7 +201,6 @@ function init(doc, win) {
     if (!cl) { section.hidden = true; return; }
     section.hidden = false;
     $('restartBtn').hidden = false;
-    $('reportBtn').hidden = false;
 
     const sf = result.safety;
     $('safetyBlock').hidden = !sf;
@@ -266,7 +265,6 @@ function init(doc, win) {
     $('history').hidden = true;
     $('slotsPanel').hidden = true;
     $('restartBtn').hidden = true;
-    $('reportBtn').hidden = true;
     $('messages').replaceChildren();
     $('input').focus();
   }
@@ -275,7 +273,10 @@ function init(doc, win) {
 
   // 回報：只在使用者按下時開啟 GitHub 新分頁，由使用者自己確認送出；不在背景傳送。
   $('reportBtn').addEventListener('click', async () => {
-    if (!rounds.length) return;
+    if (!rounds.length) {
+      $('messages').replaceChildren(el('div', 'msg warn', '還沒有內容可以回報。先在上面輸入一段文字、按「送出」，再按這個按鈕。'));
+      return;
+    }
     const ok = win.confirm('會在新分頁開啟 GitHub，建立一則「公開」的 issue，內容包含這次對話你輸入的全部文字和整理結果。\n\n任何人都看得到，請不要包含真實姓名、公司等個人資料。\n\n送出前你可以在 GitHub 上修改或刪掉內容。要繼續嗎？');
     if (!ok) return;
     const rep = prepareReport(rounds);
