@@ -150,3 +150,5 @@ mark.m-flaw.m-question { background: linear-gradient(var(--m-flaw), var(--m-ques
 .safety { border: 2px solid var(--danger); }
 .safety p { margin: 0 0 6px; }
 .slot .more { color: var(--muted); list-style: none; margin-left: -1.2em; font-size: .85rem; }
+
+[hidden] { display: none !important; }

@@ -19,7 +19,7 @@
 
 0. **安全例外（優先於下面所有規則）。** 原文出現傷害自己、期待受傷、撐不下去、想結束生命等字句時（`src/safety.js`），在最上方顯示固定的求助資訊（安心專線 1925、生命線 1995、張老師 1980、119）。這是唯一允許出現「非使用者原文」與「建議」的地方，內容固定在 `data/templates.json` 的 `safety`，不得隨原文改寫。寫到想結束生命（high）時，這一輪不追問。不要為了減少誤報而移除字詞；寧可多顯示，不可漏掉。
 
-1. **零網路、零 API、零外部資料。** `src/` 不得出現 `fetch(`、`XMLHttpRequest`、`WebSocket` 等。資料只能透過 `src/data.js` 的 JSON module 靜態載入。
+1. **零網路、零 API、零外部資料。** `src/` 不得出現 `fetch(`、`XMLHttpRequest`、`WebSocket` 等。資料只能透過 `src/data.js` 的 JSON module 靜態載入。唯一例外是「回報給 Claude」按鈕（`src/report.js`）：只在使用者按下並確認後，用 `window.open` 開啟 GitHub 新增 issue 頁面，內容預填在網址裡，由使用者自己在 GitHub 送出。不得改成背景傳送，也不得在頁面裡放任何金鑰。
 2. **輸出只能是「模板固定字串 + 使用者原文片段」。** 不得寫入使用者沒寫過的人事物或常識判斷。新增模板放 `data/templates.json`，欄位 `{X}` 等只能填原文子字串；`{D}` 填使用者 `/def` 寫下的定義。
 3. **不給建議、行動清單，不寒暄、不安慰、不稱讚。**
 4. **不捏造、不硬問。** 線索低於 `CONFIG.threshold` 就不算；原文看不出困擾就不出題。
@@ -52,6 +52,10 @@ node eval/run.js   # 產生 eval/report.md
 - `test/fixtures/long-case.txt`：使用者回報的長篇真實風格敘述，`test/audit.test.js` 有對應的回歸測試。
 
 改規則或詞典後，兩者都要跑。`eval/gold.json` 目前是合成資料（`labeled_by: "draft"`），數字不代表真實準確度；不要為了讓 eval 數字好看而對 gold 過度調參。
+
+## 收回報
+
+使用者按「回報給 Claude」後會在 repo 建立標題以 `[回報]` 開頭、內文以 `<!-- logic-audit-report v1 -->` 開頭的 issue（repo 是公開的，issue 也是公開的）。使用者說「看回報」時，用 GitHub 工具列出這些 issue、逐筆讀內容，重現問題（可把輸入存成 `test/fixtures/` 的回歸測試）再修。修完是否回覆或關閉 issue，先問使用者。
 
 ## 部署
 
