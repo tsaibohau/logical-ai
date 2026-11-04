@@ -1,0 +1,350 @@
+[
+ {
+  "id": "g01",
+  "text": "我做什麼事情都失敗，從來沒有人站在我這邊。",
+  "expected": {
+   "rules": [
+    "OVERGENERALIZE",
+    "UNDEFINED_TERM"
+   ],
+   "skeleton_contains": "無可確認事實",
+   "should_report_no_flaw": false
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g02",
+  "text": "他每次開會都遲到，這個人根本沒有時間觀念。",
+  "expected": {
+   "rules": [
+    "OVERGENERALIZE"
+   ],
+   "skeleton_contains": "無可確認事實",
+   "should_report_no_flaw": false
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g03",
+  "text": "我媽總是在挑我的毛病，不管我做什麼她都不滿意。",
+  "expected": {
+   "rules": [
+    "OVERGENERALIZE"
+   ],
+   "skeleton_contains": "無可確認事實",
+   "should_report_no_flaw": false
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g04",
+  "text": "因為我胖，所以沒人喜歡我。",
+  "expected": {
+   "rules": [
+    "CAUSAL_JUMP",
+    "OVERGENERALIZE"
+   ],
+   "skeleton_contains": "無可確認事實",
+   "should_report_no_flaw": false
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g05",
+  "text": "自從換了新主管之後，我的業績就下滑了，都是因為他。",
+  "expected": {
+   "rules": [
+    "CAUSAL_JUMP"
+   ],
+   "skeleton_contains": "無可確認事實",
+   "should_report_no_flaw": false
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g06",
+  "text": "昨天沒睡好，結果今天報告講得很爛。",
+  "expected": {
+   "rules": [
+    "CAUSAL_JUMP",
+    "UNDEFINED_TERM"
+   ],
+   "skeleton_contains": "昨天沒睡好",
+   "should_report_no_flaw": false
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g07",
+  "text": "我覺得我的人生很失敗，活得一點意義都沒有。",
+  "expected": {
+   "rules": [
+    "UNDEFINED_TERM"
+   ],
+   "skeleton_contains": "無可確認事實",
+   "should_report_no_flaw": false
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g08",
+  "text": "我想成為一個成熟的人，對工作負責。",
+  "expected": {
+   "rules": [
+    "UNDEFINED_TERM"
+   ],
+   "skeleton_contains": "無可確認事實",
+   "should_report_no_flaw": false
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g09",
+  "text": "這份工作很穩定，但我不確定這樣算不算成功。",
+  "expected": {
+   "rules": [
+    "UNDEFINED_TERM"
+   ],
+   "skeleton_contains": "無可確認事實",
+   "should_report_no_flaw": false
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g10",
+  "text": "我要嘛今年考上研究所，要嘛就去當工程師。",
+  "expected": {
+   "rules": [
+    "FALSE_BINARY"
+   ],
+   "skeleton_contains": "無可確認事實",
+   "should_report_no_flaw": false
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g11",
+  "text": "不是繼續撐下去，就是現在辭職，我沒有別的選擇。",
+  "expected": {
+   "rules": [
+    "FALSE_BINARY"
+   ],
+   "skeleton_contains": "無可確認事實",
+   "should_report_no_flaw": false
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g12",
+  "text": "我只能跟他結婚，不然就要一個人過一輩子。",
+  "expected": {
+   "rules": [
+    "FALSE_BINARY"
+   ],
+   "skeleton_contains": "無可確認事實",
+   "should_report_no_flaw": false
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g13",
+  "text": "同事最近都不約我吃飯，他們一定是覺得我很無聊。",
+  "expected": {
+   "rules": [
+    "MINDREAD"
+   ],
+   "skeleton_contains": "無可確認事實",
+   "should_report_no_flaw": false
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g14",
+  "text": "她已讀不回，她心裡一定在嫌棄我。",
+  "expected": {
+   "rules": [
+    "MINDREAD"
+   ],
+   "skeleton_contains": "她已讀不回",
+   "should_report_no_flaw": false
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g15",
+  "text": "主管把案子交給別人，他根本就不信任我。",
+  "expected": {
+   "rules": [
+    "MINDREAD"
+   ],
+   "skeleton_contains": "主管把案子交給別人",
+   "should_report_no_flaw": false
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g16",
+  "text": "我真的受不了了，這段關係根本就是錯的。",
+  "expected": {
+   "rules": [
+    "EMOTION_AS_FACT"
+   ],
+   "skeleton_contains": "無可確認事實",
+   "should_report_no_flaw": false
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g17",
+  "text": "我很焦慮，所以我應該放棄這次面試。",
+  "expected": {
+   "rules": [
+    "EMOTION_AS_FACT",
+    "CAUSAL_JUMP"
+   ],
+   "skeleton_contains": "無可確認事實",
+   "should_report_no_flaw": false
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g18",
+  "text": "想到要上班就好煩，這份工作完全沒有意義。",
+  "expected": {
+   "rules": [
+    "EMOTION_AS_FACT",
+    "UNDEFINED_TERM"
+   ],
+   "skeleton_contains": "無可確認事實",
+   "should_report_no_flaw": false
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g19",
+  "text": "我希望多陪小孩，可是我也想在今年升上經理。",
+  "expected": {
+   "rules": [
+    "GOAL_CONFLICT"
+   ],
+   "skeleton_contains": "無可確認事實",
+   "should_report_no_flaw": false
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g20",
+  "text": "我打算存錢買房，不過我又想要明年出國讀書。",
+  "expected": {
+   "rules": [
+    "GOAL_CONFLICT"
+   ],
+   "skeleton_contains": "無可確認事實",
+   "should_report_no_flaw": false
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g21",
+  "text": "我想要自由的生活，但我也希望有穩定的收入。",
+  "expected": {
+   "rules": [
+    "GOAL_CONFLICT",
+    "UNDEFINED_TERM"
+   ],
+   "skeleton_contains": "無可確認事實",
+   "should_report_no_flaw": false
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g22",
+  "text": "上週我跑步三次，每次五公里，總共花了大約九十分鐘。",
+  "expected": {
+   "rules": [],
+   "skeleton_contains": "上週我跑步三次",
+   "should_report_no_flaw": true
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g23",
+  "text": "/def 成功 = 年收入超過一百萬\n我今年的目標是成功，目前年收入八十萬。",
+  "expected": {
+   "rules": [],
+   "skeleton_contains": "目前年收入八十萬",
+   "should_report_no_flaw": true
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g24",
+  "text": "這個月我遲到了四次，主管上週五跟我說下次再遲到就要記警告。",
+  "expected": {
+   "rules": [],
+   "skeleton_contains": "遲到了四次",
+   "should_report_no_flaw": true
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g25",
+  "text": "我昨天把報告交給老師，老師說下週三會回覆。",
+  "expected": {
+   "rules": [],
+   "skeleton_contains": "我昨天把報告交給老師",
+   "should_report_no_flaw": true
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g26",
+  "text": "/def 努力 = 每天讀書兩小時以上\n我這學期很努力，期中考數學考了七十八分。",
+  "expected": {
+   "rules": [],
+   "skeleton_contains": "期中考數學考了七十八分",
+   "should_report_no_flaw": true
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g27",
+  "text": "因為颱風停班停課，所以今天的會議改到明天下午兩點。",
+  "expected": {
+   "rules": [],
+   "skeleton_contains": "會議改到明天下午兩點",
+   "should_report_no_flaw": true
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g28",
+  "text": "我在考慮換工作，目前有三個方向：留在原公司、轉到新創、或回學校讀碩士。",
+  "expected": {
+   "rules": [],
+   "skeleton_contains": "三個方向",
+   "should_report_no_flaw": true
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g29",
+  "text": "我和室友說好，每週日晚上輪流打掃浴室，上週是我掃的。",
+  "expected": {
+   "rules": [],
+   "skeleton_contains": "輪流打掃浴室",
+   "should_report_no_flaw": true
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g30",
+  "text": "老闆在會議上說我的提案預算超出百分之二十，要我週五前修改。",
+  "expected": {
+   "rules": [],
+   "skeleton_contains": "預算超出百分之二十",
+   "should_report_no_flaw": true
+  },
+  "labeled_by": "draft"
+ }
+]
