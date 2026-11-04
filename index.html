@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="color-scheme" content="light dark">
+  <title>邏輯審計</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <h1>邏輯審計</h1>
+    <p class="sub">只根據你貼上的文字判斷。不連網、不呼叫任何 API。</p>
+  </header>
+
+  <main>
+    <section id="history" class="history" aria-label="前幾輪" hidden></section>
+
+    <form id="form" class="composer" autocomplete="off">
+      <p class="hint">可用 /def 詞 = 定義 先定義你的詞。輸入 /help 看全部指令</p>
+      <label for="input" class="visually-hidden">要審計的文字</label>
+      <textarea id="input" rows="6" placeholder="描述你的狀況或想法……"></textarea>
+      <div class="row">
+        <button type="submit" id="submit">送出</button>
+        <label class="switch">
+          <input type="checkbox" id="showTrace">
+          <span>顯示判斷依據</span>
+        </label>
+      </div>
+    </form>
+
+    <section id="messages" class="messages" aria-live="polite"></section>
+
+    <section id="result" class="result" hidden>
+      <div id="source" class="source" hidden>
+        <h2>原文與命中</h2>
+        <p id="sourceText" class="source-text"></p>
+        <p class="legend">
+          <span class="m m-skeleton">骨架</span>
+          <span class="m m-flaw">漏洞</span>
+          <span class="m m-question">提問引用</span>
+          <span class="m m-defined">已定義</span>
+        </p>
+      </div>
+
+      <article class="block">
+        <h2>站得住腳的骨架</h2>
+        <p id="skeleton"></p>
+        <p id="skeletonTrace" class="trace" hidden></p>
+      </article>
+
+      <article class="block">
+        <h2>致命邏輯漏洞／隱性假設</h2>
+        <ol id="flaws" class="list"></ol>
+      </article>
+
+      <article class="block">
+        <h2>逼近本質的提問</h2>
+        <ol id="questions" class="list"></ol>
+      </article>
+
+      <details id="traceRaw" class="trace-raw" hidden>
+        <summary>trace（JSON）</summary>
+        <pre id="traceJson"></pre>
+      </details>
+    </section>
+
+    <details id="dict" class="dict">
+      <summary>定義與詞典</summary>
+      <h3>/def 定義</h3>
+      <ul id="defList" class="kv"></ul>
+      <h3>/tag 自訂詞典</h3>
+      <ul id="tagList" class="kv"></ul>
+      <div class="row wrap">
+        <button type="button" id="exportBtn" class="secondary">匯出 JSON</button>
+        <label class="button secondary" for="importFile">匯入 JSON</label>
+        <input type="file" id="importFile" accept="application/json,.json" class="visually-hidden">
+        <button type="button" id="resetBtn" class="danger">清除全部</button>
+      </div>
+    </details>
+  </main>
+
+  <noscript>這個頁面需要 JavaScript（ES Modules）。</noscript>
+  <script type="module" src="src/ui.js"></script>
+</body>
+</html>
