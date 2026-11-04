@@ -1,8 +1,10 @@
 // DOM 與 localStorage。上半部是可在 Node 測試的純函式，下半部只在瀏覽器執行。
 import { audit } from './audit.js';
 import { emptyState, CATEGORIES } from './lexicon.js';
+import { templates } from './data.js';
+import { SLOTS } from './clarify.js';
 
-export const STORAGE_KEY = 'logic-audit-state-v1';
+export const STORAGE_KEY = 'logic-audit-state-v1'; // 沿用舊 key，保留使用者已存的定義
 
 export const RULE_LABELS = {
   OVERGENERALIZE: '以偏概全',
@@ -16,6 +18,11 @@ export const RULE_LABELS = {
   COST_UNSTATED: '代價未寫',
   ONE_SIDED: '只看一邊',
   NO_REVISION: '改變條件',
+  EVENT: '發生了什麼',
+  FEELING: '感受',
+  WANT: '想要',
+  BLOCK: '擋住你的',
+  WORRY: '擔心',
   SKELETON: '骨架',
   SKELETON_NONE: '無骨架',
   DEFINED: '已定義',
@@ -48,21 +55,25 @@ export function highlightHtml(text, marks) {
   return html;
 }
 
-/** 從 audit 結果的 trace 產生高亮標記。 */
+const SLOT_CLS = { EVENT: 'm-event', FEELING: 'm-feeling', WANT: 'm-want', BLOCK: 'm-block', WORRY: 'm-worry' };
+
+/** 從 audit 結果的 trace 產生高亮標記：五格分色，已定義的詞帶出定義。 */
 export function marksFromResult(result) {
   const marks = [];
   for (const t of result.trace || []) {
-    const label = RULE_LABELS[t.ruleId] || t.ruleId;
     for (const s of t.spans) {
-      if (t.section === 'skeleton' && t.ruleId === 'SKELETON') marks.push({ ...s, cls: 'm-skeleton', title: '骨架' });
-      else if (t.section === 'skeleton') marks.push({ ...s, cls: 'm-flaw', title: '尚未定義' });
-      else if (t.section === 'flaw') marks.push({ ...s, cls: 'm-flaw', title: `${t.ruleId}｜${label}｜severity ${t.severity}` });
-      else if (t.section === 'question') marks.push({ ...s, cls: 'm-question', title: `提問引用（${t.ruleId}）` });
-      else if (t.section === 'blindspot') marks.push({ ...s, cls: 'm-blind', title: `盲點（${label}）` });
+      if (t.section === 'slot') marks.push({ ...s, cls: SLOT_CLS[t.ruleId], title: RULE_LABELS[t.ruleId] });
       else if (t.section === 'defined') marks.push({ ...s, cls: 'm-defined', title: `已定義：${t.def}` });
     }
   }
   return marks;
+}
+
+/** 草稿：［…］是使用者的字，［？］是還沒補上的格子。回傳安全的 HTML。 */
+export function draftHtml(text, missing = templates.clarify.missing) {
+  return escapeHtml(text).replace(/［(.*?)］/g, (_, inner) => (inner === escapeHtml(missing)
+    ? '<span class="gap">？</span>'
+    : `<span class="fill">${inner}</span>`));
 }
 
 /** 驗證並正規化匯入的 JSON 狀態；格式不符就丟錯。 */
@@ -152,50 +163,66 @@ function init(doc, win) {
     past.forEach((r, i) => {
       const d = el('details', 'history-item');
       d.append(el('summary', null, `第 ${i + 1} 輪：${r.body.slice(0, 24)}${r.body.length > 24 ? '…' : ''}`));
-      d.append(el('p', null, `骨架：${r.skeleton.text}`));
-      d.append(el('p', null, `推論鏈：${r.noFlaw ? r.flawText : r.flaws.map((f) => RULE_LABELS[f.ruleId]).join('、')}`));
-      d.append(el('p', null, `盲點：${r.blindspot ? RULE_LABELS[r.blindspot.ruleId] : r.blindspotText}`));
+      d.append(el('p', null, r.body));
+      const q = r.clarify && r.clarify.question;
+      if (q) d.append(el('p', 'q', `問：${q.text}`));
       box.append(d);
     });
+  }
+
+  function renderSlots(cl) {
+    const panel = $('slotsPanel');
+    const list = $('slotsList');
+    list.replaceChildren();
+    const labels = templates.clarify.slotLabels;
+    let any = false;
+    for (const k of SLOTS) {
+      const items = cl.slots[k] || [];
+      if (!items.length) continue;
+      any = true;
+      const sec = el('div', 'slot');
+      sec.append(el('h3', null, labels[k]));
+      const ul = el('ul');
+      for (const it of items) ul.append(el('li', null, it.text));
+      sec.append(ul);
+      list.append(sec);
+    }
+    panel.hidden = !any;
   }
 
   function renderResult(result) {
     const show = $('showTrace').checked;
     const section = $('result');
-    if (result.empty) { section.hidden = true; return; }
+    const cl = result.clarify;
+    if (!cl) { section.hidden = true; return; }
     section.hidden = false;
+    $('restartBtn').hidden = false;
 
-    $('skeleton').textContent = result.skeleton.text;
-    const st = $('skeletonTrace');
-    st.hidden = !show;
-    st.textContent = show ? `${result.skeleton.trace.ruleId}：${result.skeleton.trace.spans.map((s) => `「${s.text}」@${s.start}-${s.end}`).join('、') || '—'}` : '';
+    $('draft').innerHTML = draftHtml(cl.draft.text);
+    const dn = $('draftNote');
+    dn.hidden = !cl.confirmed;
+    dn.textContent = cl.confirmed ? cl.note : '';
 
-    const spansText = (spans) => spans.map((s) => `「${s.text}」@${s.start}-${s.end}`).join('、');
-    const flaws = $('flaws');
-    flaws.replaceChildren();
-    if (result.noFlaw) flaws.append(el('li', 'ok', result.flawText));
-    result.flaws.forEach((f) => {
-      const li = el('li', null, f.note);
-      const q = result.questions.find((x) => x.section !== 'blindspot' && x.ruleId === f.ruleId);
-      if (q) li.append(el('div', 'ask', q.text));
-      if (show) li.append(el('div', 'trace', `${f.ruleId}（${RULE_LABELS[f.ruleId]}）severity ${f.severity}｜${spansText(f.spans)}${q ? `｜${q.templateId}` : ''}`));
-      flaws.append(li);
-    });
+    $('stuckBlock').hidden = !cl.stuck;
+    $('stuck').textContent = cl.stuck ? cl.stuck.note : '';
 
-    const bs = $('blindspot');
-    bs.replaceChildren();
-    if (!result.blindspot) bs.append(el('p', 'ok', result.blindspotText));
-    else {
-      const b = result.blindspot;
-      bs.append(el('p', null, b.note));
-      bs.append(el('p', 'ask', b.text));
-      if (show) bs.append(el('p', 'trace', `${b.ruleId}（${RULE_LABELS[b.ruleId]}）｜${b.templateId}｜${spansText(b.spans)}`));
-    }
+    const qb = $('questionBlock');
+    qb.hidden = !cl.question && !cl.note;
+    $('question').textContent = cl.question ? cl.question.text : (cl.confirmed ? '' : cl.note);
+    if (cl.confirmed) qb.hidden = true;
+    qb.querySelector('.hint').hidden = !cl.question;
 
-    $('source').hidden = !show;
+    renderSlots(cl);
+
+    $('source').hidden = !show || result.empty;
     $('traceRaw').hidden = !show;
-    if (show) {
+    if (show && !result.empty) {
       $('sourceText').innerHTML = highlightHtml(result.body, marksFromResult(result));
+      const lines = [];
+      if (cl.stuck) lines.push(`卡點 ${cl.stuck.kind}${cl.stuck.from ? `（線索：${cl.stuck.from}）` : ''}`);
+      if (cl.question) lines.push(`提問 ${cl.question.templateId}`);
+      for (const f of result.flaws) lines.push(`線索 ${f.ruleId} severity ${f.severity}`);
+      $('traceLines').textContent = lines.join('｜');
       $('traceJson').textContent = JSON.stringify(result.trace, null, 2);
     }
   }
@@ -212,11 +239,24 @@ function init(doc, win) {
     renderMessages(result);
     renderHistory();
     renderDict();
-    if (!result.empty) renderResult(result);
-    else if (lastResult) renderResult(lastResult);
+    if (lastResult) renderResult(lastResult);
     $('input').value = '';
+    if (!result.empty) $('result').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  function restart() {
+    rounds.length = 0;
+    lastAudited = null;
+    lastResult = null;
+    $('result').hidden = true;
+    $('history').hidden = true;
+    $('slotsPanel').hidden = true;
+    $('restartBtn').hidden = true;
+    $('messages').replaceChildren();
+    $('input').focus();
+  }
+
+  $('restartBtn').addEventListener('click', restart);
   $('form').addEventListener('submit', (e) => { e.preventDefault(); submit(); });
   $('input').addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); submit(); }

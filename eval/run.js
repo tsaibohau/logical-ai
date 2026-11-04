@@ -53,7 +53,7 @@ for (const g of gold) {
     if (gotB === g.expected.blindspot) bsHit++;
     else problems.push(`盲點不符（期望 ${g.expected.blindspot ?? '無'}，實際 ${gotB ?? '無'}）`);
     // 推論成立、也沒有盲點的案例：一題都不該問。
-    if (g.expected.should_report_no_flaw && g.expected.blindspot === null) {
+    if (g.expected.should_report_no_flaw && g.expected.blindspot === null && !g.expected.troubled) {
       quietTotal++;
       if (r.questions.length === 0) quietOk++;
       else problems.push(`應該完全不問，卻問了 ${r.questions.length} 題`);
@@ -72,11 +72,13 @@ for (const g of gold) {
 
 const pct = (a, b) => (b === 0 ? '—' : `${((a / b) * 100).toFixed(0)}%`);
 const lines = [];
-lines.push('# 評估報告');
+lines.push('# 評估報告（線索偵測）');
+lines.push('');
+lines.push('> 改版為「說清楚」後，這裡的規則不再對使用者顯示成漏洞，而是當作找卡點的**線索**。本報告只評估線索偵測；「問題草稿是否說中使用者真正的問題」需要真人測試，目前沒有評估。');
 lines.push('');
 lines.push(`> **警告：以下數字來自 \`eval/gold.json\` 的 ${gold.length} 筆合成資料（\`labeled_by: "draft"\`），由同一個開發流程撰寫與標註，不能當作真實準確度。** 真實準確度需以真實輸入與人工標註重新評估。`);
 lines.push('>');
-lines.push('> 設計改為「推論成立就放行，只問結構性盲點」後，g07～g09 依新設計改標為無漏洞；g31～g40 是改版後新寫、改規則時沒有用過的「推論成立」案例。');
+lines.push('> 設計改為「推論成立就放行，只問結構性盲點」後，g07～g09 依新設計改標為無漏洞；g31～g40 是改版後新寫、改規則時沒有用過的「推論成立」案例。改為「說清楚」後，g07、g09 標為 `troubled: true`（原文本身就是困擾，應該問一題），不列入「完全不問」的分母。');
 lines.push('');
 lines.push(`- 資料筆數：${gold.length}（應有漏洞 ${posTotal}、應無漏洞 ${negTotal}）`);
 lines.push(`- 門檻 threshold：${CONFIG.threshold}；每次最多輸出 ${CONFIG.maxFlaws} 項`);
@@ -99,7 +101,7 @@ lines.push(`- 無漏洞案例誤報率：${negFalseAlarm}/${negTotal} = ${pct(ne
 lines.push(`- 有漏洞案例完全漏抓（輸出無漏洞）：${posMissedAll}/${posTotal} = ${pct(posMissedAll, posTotal)}`);
 lines.push(`- 骨架命中率：${skHit}/${skTotal} = ${pct(skHit, skTotal)}`);
 lines.push(`- 盲點判斷正確率（有標註者）：${bsHit}/${bsTotal} = ${pct(bsHit, bsTotal)}`);
-lines.push(`- 「推論成立且無盲點」案例完全不問的比例：${quietOk}/${quietTotal} = ${pct(quietOk, quietTotal)}`);
+lines.push(`- 「沒有困擾、也沒有盲點」案例完全不問的比例：${quietOk}/${quietTotal} = ${pct(quietOk, quietTotal)}`);
 lines.push(`- 完全正確的案例：${gold.length - failures.length}/${gold.length}`);
 lines.push('');
 lines.push('## 失敗案例');

@@ -5,24 +5,62 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="color-scheme" content="light dark">
-  <title>邏輯審計</title>
+  <title>說清楚</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="top">
-    <h1>邏輯審計</h1>
-    <p class="sub">只根據你貼上的文字判斷。不連網、不呼叫任何 API。</p>
+    <h1>說清楚</h1>
+    <p class="sub">說不清楚自己卡在哪裡？先寫下來。系統只用你自己的字，把它整理成一個問題。不連網、不呼叫任何 API。</p>
   </header>
 
   <main>
     <section id="history" class="history" aria-label="前幾輪" hidden></section>
 
+    <section id="result" class="result" hidden>
+      <article class="block draft-block">
+        <h2>你的問題草稿</h2>
+        <p id="draft" class="draft"></p>
+        <p id="draftNote" class="ok" hidden></p>
+      </article>
+
+      <article id="stuckBlock" class="block" hidden>
+        <h2>你可能卡在這裡</h2>
+        <p id="stuck"></p>
+      </article>
+
+      <article id="questionBlock" class="block ask-block">
+        <h2>下一個問題</h2>
+        <p id="question" class="ask"></p>
+        <p class="hint">直接在下面回答就好，答案會補進草稿。</p>
+      </article>
+
+      <div id="source" class="source" hidden>
+        <h2>這一輪的原文</h2>
+        <p id="sourceText" class="source-text"></p>
+        <p class="legend">
+          <span class="m m-event">發生了什麼</span>
+          <span class="m m-feeling">感受</span>
+          <span class="m m-want">想要</span>
+          <span class="m m-block">擋住你的</span>
+          <span class="m m-worry">擔心</span>
+          <span class="m m-defined">已定義</span>
+        </p>
+        <p id="traceLines" class="trace"></p>
+      </div>
+      <details id="traceRaw" class="trace-raw" hidden>
+        <summary>trace（JSON）</summary>
+        <pre id="traceJson"></pre>
+      </details>
+    </section>
+
     <form id="form" class="composer" autocomplete="off">
-      <p class="hint">可用 /def 詞 = 定義 先定義你的詞。輸入 /help 看全部指令</p>
-      <label for="input" class="visually-hidden">要審計的文字</label>
-      <textarea id="input" rows="6" placeholder="描述你的狀況或想法……"></textarea>
-      <div class="row">
+      <p class="hint">想到什麼就寫什麼，不用整理。可用 /def 詞 = 定義 先定義你的詞。輸入 /help 看全部指令</p>
+      <label for="input" class="visually-hidden">你的狀況或回答</label>
+      <textarea id="input" rows="5" placeholder="最近讓你卡住的事……"></textarea>
+      <div class="row wrap">
         <button type="submit" id="submit">送出</button>
+        <button type="button" id="restartBtn" class="secondary" hidden>重新開始</button>
         <label class="switch">
           <input type="checkbox" id="showTrace">
           <span>顯示判斷依據</span>
@@ -32,40 +70,10 @@
 
     <section id="messages" class="messages" aria-live="polite"></section>
 
-    <section id="result" class="result" hidden>
-      <div id="source" class="source" hidden>
-        <h2>原文與命中</h2>
-        <p id="sourceText" class="source-text"></p>
-        <p class="legend">
-          <span class="m m-skeleton">骨架</span>
-          <span class="m m-flaw">漏洞</span>
-          <span class="m m-question">提問引用</span>
-          <span class="m m-blind">盲點</span>
-          <span class="m m-defined">已定義</span>
-        </p>
-      </div>
-
-      <article class="block">
-        <h2>站得住腳的骨架</h2>
-        <p id="skeleton"></p>
-        <p id="skeletonTrace" class="trace" hidden></p>
-      </article>
-
-      <article class="block">
-        <h2>推論鏈</h2>
-        <ol id="flaws" class="list"></ol>
-      </article>
-
-      <article class="block">
-        <h2>你可能沒看到的地方</h2>
-        <div id="blindspot"></div>
-      </article>
-
-      <details id="traceRaw" class="trace-raw" hidden>
-        <summary>trace（JSON）</summary>
-        <pre id="traceJson"></pre>
-      </details>
-    </section>
+    <details id="slotsPanel" class="dict" hidden>
+      <summary>你說了什麼</summary>
+      <div id="slotsList"></div>
+    </details>
 
     <details id="dict" class="dict">
       <summary>定義與詞典</summary>

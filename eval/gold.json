@@ -81,7 +81,8 @@
    "rules": [],
    "skeleton_contains": "無可確認事實",
    "should_report_no_flaw": true,
-   "blindspot": null
+   "blindspot": null,
+   "troubled": true
   },
   "labeled_by": "draft"
  },
@@ -103,7 +104,8 @@
    "rules": [],
    "skeleton_contains": "無可確認事實",
    "should_report_no_flaw": true,
-   "blindspot": null
+   "blindspot": null,
+   "troubled": true
   },
   "labeled_by": "draft"
  },

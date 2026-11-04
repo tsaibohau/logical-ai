@@ -13,12 +13,28 @@ export function allTemplates() {
   for (const list of Object.values(templates.findings)) for (const x of list) out.push(typeof x === 'string' ? x : x.t);
   for (const list of Object.values(templates.questions)) out.push(...list);
   for (const b of Object.values(templates.blindspots)) out.push(b.note, ...b.questions);
+  const c = templates.clarify;
+  out.push(c.draft);
+  for (const st of Object.values(c.stuck)) out.push(st.note, ...st.questions);
+  for (const list of Object.values(c.ask)) out.push(...list);
   return out;
 }
 
-/** 使用者自己寫下的文字：本文 + /def 的定義內容。 */
-export function userSources(result) {
-  return [result.body, ...Object.values(result.state.defs).map((d) => d.text)];
+/** 使用者自己寫下的文字：本文 + /def 的定義內容 + 前幾輪的本文。 */
+export function userSources(result, previousBodies = []) {
+  return [result.body, ...previousBodies, ...Object.values(result.state.defs).map((d) => d.text)];
+}
+
+/** 檢查一次 audit 的所有對外文字（草稿、卡點、提問）。回傳不合格的字串。 */
+export function unexplainedOutputs(result, previousBodies = []) {
+  const src = userSources(result, previousBodies);
+  const out = [];
+  const cl = result.clarify;
+  if (!cl) return out;
+  if (cl.draft && !explainedBy(cl.draft.text, src)) out.push(cl.draft.text);
+  if (cl.stuck && !explainedBy(cl.stuck.note, src)) out.push(cl.stuck.note);
+  for (const q of result.questions) if (!explainedBy(q.text, src)) out.push(q.text);
+  return out;
 }
 
 /** 輸出是否能由某個模板、且只用使用者原文片段填出。sources 可以是字串或字串陣列。 */
@@ -26,7 +42,7 @@ export function explainedBy(output, sources, list = allTemplates()) {
   const src = Array.isArray(sources) ? sources : [sources];
   for (const t of list) {
     const m = output.match(templateRegex(t));
-    if (m && m.slice(1).every((g) => src.some((x) => x.includes(g)))) return t;
+    if (m && m.slice(1).every((g) => g === templates.clarify.missing || src.some((x) => x.includes(g)))) return t;
   }
   return null;
 }

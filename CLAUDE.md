@@ -4,16 +4,23 @@
 
 ## 這是什麼
 
-純前端、離線的「邏輯審計」網站：輸入一段文字 → 輸出骨架、推論鏈（成立，或 1～2 個斷點並問最嚴重的一題）、盲點（0 或 1 題）。
+「說清楚」：純前端、離線的網站，幫**不善於表達自己真正問題的人**，用他自己的字把問題拼出來。不是挑使用者的錯。
 
-**核心原則：不鑽牛角尖。** 推論成立就放行；沒有缺口就一題都不問。新增規則時，先確認它不會在正常的手段推論、已寫出的取捨、單純的描述上觸發（`test/audit.test.js` 的「不鑽牛角尖」測試）。入口是 `src/audit.js` 的 `audit(input, userState, { previous })`。
+流程：輸入 → 分進五格（發生了什麼／感受／想要／擋住你的／擔心）→ 問題草稿「我想要［W］，但是［B］，我的感受是［F］。」→ 卡點 → 一次只問一題 → 回答填進被問的格子 → 草稿齊了就確認 → 使用者說「是」就停。
+
+**核心原則：**
+- 不挑錯。`src/rules.js` 的規則只當線索，畫面上不出現「漏洞」「錯誤」。
+- 不鑽牛角尖。沒有困擾的事實與安排不出題（`test/audit.test.js`「不挑錯」）。
+- 一次只問一題，同一題不重複問。
+
+入口是 `src/audit.js` 的 `audit(input, userState, { previous })`，整理結果在 `result.clarify`。
 
 ## 鐵則（違反任何一條都算失敗）
 
 1. **零網路、零 API、零外部資料。** `src/` 不得出現 `fetch(`、`XMLHttpRequest`、`WebSocket` 等。資料只能透過 `src/data.js` 的 JSON module 靜態載入。
 2. **輸出只能是「模板固定字串 + 使用者原文片段」。** 不得寫入使用者沒寫過的人事物或常識判斷。新增模板放 `data/templates.json`，欄位 `{X}` 等只能填原文子字串；`{D}` 填使用者 `/def` 寫下的定義。
 3. **不給建議、行動清單，不寒暄、不安慰、不稱讚。**
-4. **不捏造漏洞、不硬問。** 低於 `CONFIG.threshold` 就輸出「推論成立，未發現實質漏洞」；沒有結構性盲點就輸出「未發現盲點」，不出題。
+4. **不捏造、不硬問。** 線索低於 `CONFIG.threshold` 就不算；原文看不出困擾就不出題。
 5. **可追溯。** 每個 finding 帶 `ruleId` 與 `spans`（原文位置），`result.trace` 彙整所有判斷。
 6. 純 HTML + ES Modules + 原生 JS。不要加打包工具、框架或 npm 執行期依賴。測試只用 `node:test`。
 
@@ -25,6 +32,7 @@
 - `src/rules.js`：8 條規則（第 8 條 `DEF_MISMATCH` 是使用者回報後加的），每條 `(tokens, sentences, state) -> Finding[]`。門檻與權重都在 `CONFIG`。
 - `src/skeleton.js`、`src/questions.js`：骨架與斷點提問。
 - `src/blindspots.js`：盲點，只看原文有沒有寫到代價、改變條件、反方向理由。
+- `src/clarify.js`：五格分類、草稿、卡點（由線索轉換）、提問優先序與多輪累積。
 - `src/ui.js`：上半部是可測試的純函式，`init()` 只在瀏覽器執行。
 - `data/lexicon.json` 類別固定為 10 類；`data/observable.json` 是輔助字表（不能 /tag）。
 
@@ -37,7 +45,7 @@ node eval/run.js   # 產生 eval/report.md
 
 守門測試：
 - `test/guard-no-network.test.js`：stub 掉 fetch/XHR/WebSocket 後跑 audit，必須零呼叫。
-- `test/guard-no-external-words.test.js`：gold 每筆的輸出都要能由模板 + 原文片段反推。
+- `test/guard-no-external-words.test.js`：gold 每筆的草稿、卡點、提問都要能由模板 + 原文片段反推。
 
 改規則或詞典後，兩者都要跑。`eval/gold.json` 目前是合成資料（`labeled_by: "draft"`），數字不代表真實準確度；不要為了讓 eval 數字好看而對 gold 過度調參。
 

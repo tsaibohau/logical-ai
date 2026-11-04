@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { audit } from '../src/audit.js';
 import { emptyState } from '../src/lexicon.js';
-import { explainedBy, skeletonOk, userSources } from './helpers.js';
+import { explainedBy, skeletonOk, userSources, unexplainedOutputs } from './helpers.js';
 
 const gold = JSON.parse(readFileSync(new URL('../eval/gold.json', import.meta.url), 'utf8'));
 
@@ -16,10 +16,11 @@ test('gold 至少 30 筆且全部標為 draft', () => {
 for (const g of gold) {
   test(`無外部詞：${g.id}`, () => {
     const r = audit(g.text, emptyState());
-    for (const f of r.flaws) assert.ok(explainedBy(f.note, userSources(r)), `漏洞描述含外部詞：${f.note}`);
-    for (const q of r.questions) assert.ok(explainedBy(q.text, userSources(r)), `提問含外部詞：${q.text}`);
+    for (const f of r.flaws) assert.ok(explainedBy(f.note, userSources(r)), `線索描述含外部詞：${f.note}`);
+    assert.deepEqual(unexplainedOutputs(r), [], '草稿／卡點／提問含外部詞');
     assert.ok(skeletonOk(r.skeleton, r.body), `骨架不是原文：${r.skeleton.text}`);
     if (r.blindspot) assert.ok(explainedBy(r.blindspot.note, userSources(r)), `盲點描述含外部詞：${r.blindspot.note}`);
+    assert.ok(r.questions.length <= 1, '一次只問一題');
     if (r.noFlaw) assert.equal(r.flawText, '推論成立，未發現實質漏洞');
     // 每個判斷都可追溯
     for (const t of r.trace) {

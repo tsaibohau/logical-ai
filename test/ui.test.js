@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { escapeHtml, highlightHtml, marksFromResult, normalizeState, loadState, saveState, STORAGE_KEY } from '../src/ui.js';
+import { escapeHtml, highlightHtml, marksFromResult, draftHtml, normalizeState, loadState, saveState, STORAGE_KEY } from '../src/ui.js';
 import { audit } from '../src/audit.js';
 import { emptyState } from '../src/lexicon.js';
 
@@ -16,12 +16,17 @@ test('highlightHtml：重疊標記、跳脫原文', () => {
   assert.equal(html, '&lt;我&gt;<mark class="m-flaw" title="A">總</mark><mark class="m-flaw m-question" title="A\nB">是</mark><mark class="m-question" title="B">很煩</mark>');
 });
 
-test('marksFromResult：定義詞帶出定義內容', () => {
-  const r = audit('/def 努力 = 每週運動三次\n我很努力，但老闆覺得我不夠認真。');
+test('marksFromResult：五格分色、定義詞帶出定義內容', () => {
+  const r = audit('/def 努力 = 每週運動三次\n我很努力，但老闆覺得我不夠認真，我好煩。');
   const marks = marksFromResult(r);
   assert.ok(marks.some((m) => m.cls === 'm-defined' && m.title.includes('每週運動三次')));
-  assert.ok(marks.some((m) => m.cls === 'm-flaw'));
+  assert.ok(marks.some((m) => m.cls === 'm-block'));
+  assert.ok(marks.some((m) => m.cls === 'm-feeling'));
   for (const m of marks) assert.equal(r.body.slice(m.start, m.end), m.text);
+});
+
+test('draftHtml：缺格與已填格分開標記，並跳脫原文', () => {
+  assert.equal(draftHtml('我想要［<b>］，但是［？］。'), '我想要<span class="fill">&lt;b&gt;</span>，但是<span class="gap">？</span>。');
 });
 
 test('normalizeState：驗證匯入格式', () => {
