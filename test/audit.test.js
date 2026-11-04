@@ -151,3 +151,36 @@ test('安全提示：寫到想結束生命時這一輪不追問', () => {
 test('安全提示：一般困擾不顯示', () => {
   assert.equal(audit('我想要升遷，但是我也想準時下班。').safety, null);
 });
+
+test('回歸：回報 #1（四輪長篇）——「想像」不是想要，回答進被問的格子，「不是…而是…」改寫重點', async () => {
+  const { readFileSync } = await import('node:fs');
+  const r1 = readFileSync(new URL('./fixtures/long-case.txt', import.meta.url), 'utf8');
+  const rest = JSON.parse(readFileSync(new URL('./fixtures/report-1-rounds.json', import.meta.url), 'utf8'));
+  const rs = converse([r1, ...rest]);
+  // 第 2 輪：回答「最先做不出來的是哪一步」
+  const c2 = rs[1].clarify;
+  assert.ok(!c2.current.WANT.some((x) => x.text.includes('想像')), '「想像」不該當成想要');
+  assert.match(c2.draft.parts.B, /發送邀請/);
+  // 第 3 輪：「不是…而是 Y」，Y 成為想要，不再拿問題的框架「如果只能先動一個骨牌」當擋住
+  const c3 = rs[2].clarify;
+  assert.match(c3.draft.parts.W, /^回家把.*對不起.*講出來$/);
+  assert.ok(!/骨牌/.test(c3.draft.parts.B), c3.draft.parts.B);
+  assert.match(c3.draft.parts.B, /對不起.*擠不出來/);
+  assert.notEqual(c3.question && c3.question.id, 'REJECTED');
+  assert.equal(rs[2].safety.level, 'concern'); // 期待送醫
+  assert.match(rs[3].clarify.draft.parts.F, /羞愧/);
+  rs.forEach((r, i) => assert.deepEqual(unexplainedOutputs(r, rs.slice(0, i).map((x) => x.body)), []));
+});
+
+test('確認題回答「不是。…而是 Y」時，不再追問「除了…」，Y 當成想要', () => {
+  const rs = converse(['上週主管退回我的報告，我想要升遷，但是我沒辦法準時交報告，覺得很累。', '是', ]);
+  assert.ok(rs[1].clarify.confirmed);
+  const rs2 = converse(['上週主管退回我的報告，我想要升遷，但是我沒辦法準時交報告，覺得很累。', '不是。不是報告，而是跟主管把話講開。']);
+  const c = rs2[1].clarify;
+  assert.equal(rs2[0].clarify.question.id, 'CONFIRM');
+  assert.equal(c.draft.parts.W, '跟主管把話講開');
+  assert.notEqual(c.draft.parts.B, '我沒辦法準時交報告');
+  assert.notEqual(c.question && c.question.id, 'REJECTED');
+  const rs3 = converse(['上週主管退回我的報告，我想要升遷，但是我沒辦法準時交報告，覺得很累。', '不是。']);
+  assert.equal(rs3[1].clarify.question.id, 'REJECTED');
+});

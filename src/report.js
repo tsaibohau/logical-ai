@@ -79,12 +79,7 @@ export function prepareReport(rounds, opts = {}) {
   const { title, body } = buildReport(rounds, opts);
   const url = issueUrl(title, body);
   if (url.length <= MAX_URL_LENGTH) return { url, full: body, needsClipboard: false };
-  const short = [
-    REPORT_MARKER,
-    '## 說清楚：使用回報',
-    '',
-    '內容太長，網址放不下。完整回報已複製到剪貼簿，**請把這段文字整個刪掉，然後貼上**。',
-    '',
-  ].join('\n');
+  // 只留一行提示：貼上的完整內容自己帶著標題，忘了刪這行也不會重複。
+  const short = '（內容太長，完整回報已複製到剪貼簿：請刪掉這一行，貼上。）';
   return { url: issueUrl(title, short), full: body, needsClipboard: true };
 }

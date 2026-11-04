@@ -21,3 +21,7 @@ test('一般文字不觸發', () => {
 test('固定求助資訊包含 1925', () => {
   assert.match(detectSafety('撐不下去了').body, /1925/);
 });
+
+test('期待送醫也算安全提示', () => {
+  assert.equal(detectSafety('被熱水燙到期待送醫').level, 'concern');
+});
