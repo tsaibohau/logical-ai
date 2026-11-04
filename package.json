@@ -1,0 +1,12 @@
+{
+  "name": "logic-audit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "離線邏輯審計：只根據使用者原文輸出骨架、漏洞與提問",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "eval": "node eval/run.js"
+  },
+  "license": "MIT"
+}
