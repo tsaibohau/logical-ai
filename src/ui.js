@@ -13,7 +13,9 @@ export const RULE_LABELS = {
   EMOTION_AS_FACT: '情緒當事實',
   GOAL_CONFLICT: '目標衝突',
   DEF_MISMATCH: '定義不符',
-  BOUNDARY: '定義邊界',
+  COST_UNSTATED: '代價未寫',
+  ONE_SIDED: '只看一邊',
+  NO_REVISION: '改變條件',
   SKELETON: '骨架',
   SKELETON_NONE: '無骨架',
   DEFINED: '已定義',
@@ -56,6 +58,7 @@ export function marksFromResult(result) {
       else if (t.section === 'skeleton') marks.push({ ...s, cls: 'm-flaw', title: '尚未定義' });
       else if (t.section === 'flaw') marks.push({ ...s, cls: 'm-flaw', title: `${t.ruleId}｜${label}｜severity ${t.severity}` });
       else if (t.section === 'question') marks.push({ ...s, cls: 'm-question', title: `提問引用（${t.ruleId}）` });
+      else if (t.section === 'blindspot') marks.push({ ...s, cls: 'm-blind', title: `盲點（${label}）` });
       else if (t.section === 'defined') marks.push({ ...s, cls: 'm-defined', title: `已定義：${t.def}` });
     }
   }
@@ -150,7 +153,8 @@ function init(doc, win) {
       const d = el('details', 'history-item');
       d.append(el('summary', null, `第 ${i + 1} 輪：${r.body.slice(0, 24)}${r.body.length > 24 ? '…' : ''}`));
       d.append(el('p', null, `骨架：${r.skeleton.text}`));
-      d.append(el('p', null, `漏洞：${r.noFlaw ? r.flawText : r.flaws.map((f) => RULE_LABELS[f.ruleId]).join('、')}`));
+      d.append(el('p', null, `推論鏈：${r.noFlaw ? r.flawText : r.flaws.map((f) => RULE_LABELS[f.ruleId]).join('、')}`));
+      d.append(el('p', null, `盲點：${r.blindspot ? RULE_LABELS[r.blindspot.ruleId] : r.blindspotText}`));
       box.append(d);
     });
   }
@@ -166,21 +170,26 @@ function init(doc, win) {
     st.hidden = !show;
     st.textContent = show ? `${result.skeleton.trace.ruleId}：${result.skeleton.trace.spans.map((s) => `「${s.text}」@${s.start}-${s.end}`).join('、') || '—'}` : '';
 
+    const spansText = (spans) => spans.map((s) => `「${s.text}」@${s.start}-${s.end}`).join('、');
     const flaws = $('flaws');
     flaws.replaceChildren();
-    if (result.noFlaw) flaws.append(el('li', null, result.flawText));
-    for (const f of result.flaws) {
+    if (result.noFlaw) flaws.append(el('li', 'ok', result.flawText));
+    result.flaws.forEach((f) => {
       const li = el('li', null, f.note);
-      if (show) li.append(el('div', 'trace', `${f.ruleId}（${RULE_LABELS[f.ruleId]}）severity ${f.severity}｜${f.spans.map((s) => `「${s.text}」@${s.start}-${s.end}`).join('、')}`));
+      const q = result.questions.find((x) => x.section !== 'blindspot' && x.ruleId === f.ruleId);
+      if (q) li.append(el('div', 'ask', q.text));
+      if (show) li.append(el('div', 'trace', `${f.ruleId}（${RULE_LABELS[f.ruleId]}）severity ${f.severity}｜${spansText(f.spans)}${q ? `｜${q.templateId}` : ''}`));
       flaws.append(li);
-    }
+    });
 
-    const qs = $('questions');
-    qs.replaceChildren();
-    for (const q of result.questions) {
-      const li = el('li', null, q.text);
-      if (show) li.append(el('div', 'trace', `${q.templateId}｜${q.spans.map((s) => `「${s.text}」@${s.start}-${s.end}`).join('、')}`));
-      qs.append(li);
+    const bs = $('blindspot');
+    bs.replaceChildren();
+    if (!result.blindspot) bs.append(el('p', 'ok', result.blindspotText));
+    else {
+      const b = result.blindspot;
+      bs.append(el('p', null, b.note));
+      bs.append(el('p', 'ask', b.text));
+      if (show) bs.append(el('p', 'trace', `${b.ruleId}（${RULE_LABELS[b.ruleId]}）｜${b.templateId}｜${spansText(b.spans)}`));
     }
 
     $('source').hidden = !show;

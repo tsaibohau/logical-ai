@@ -78,11 +78,10 @@
   "id": "g07",
   "text": "我覺得我的人生很失敗，活得一點意義都沒有。",
   "expected": {
-   "rules": [
-    "UNDEFINED_TERM"
-   ],
+   "rules": [],
    "skeleton_contains": "無可確認事實",
-   "should_report_no_flaw": false
+   "should_report_no_flaw": true,
+   "blindspot": null
   },
   "labeled_by": "draft"
  },
@@ -90,11 +89,10 @@
   "id": "g08",
   "text": "我想成為一個成熟的人，對工作負責。",
   "expected": {
-   "rules": [
-    "UNDEFINED_TERM"
-   ],
+   "rules": [],
    "skeleton_contains": "無可確認事實",
-   "should_report_no_flaw": false
+   "should_report_no_flaw": true,
+   "blindspot": "COST_UNSTATED"
   },
   "labeled_by": "draft"
  },
@@ -102,11 +100,10 @@
   "id": "g09",
   "text": "這份工作很穩定，但我不確定這樣算不算成功。",
   "expected": {
-   "rules": [
-    "UNDEFINED_TERM"
-   ],
+   "rules": [],
    "skeleton_contains": "無可確認事實",
-   "should_report_no_flaw": false
+   "should_report_no_flaw": true,
+   "blindspot": null
   },
   "labeled_by": "draft"
  },
@@ -263,7 +260,8 @@
   "expected": {
    "rules": [],
    "skeleton_contains": "上週我跑步三次",
-   "should_report_no_flaw": true
+   "should_report_no_flaw": true,
+   "blindspot": null
   },
   "labeled_by": "draft"
  },
@@ -283,7 +281,8 @@
   "expected": {
    "rules": [],
    "skeleton_contains": "遲到了四次",
-   "should_report_no_flaw": true
+   "should_report_no_flaw": true,
+   "blindspot": null
   },
   "labeled_by": "draft"
  },
@@ -293,7 +292,8 @@
   "expected": {
    "rules": [],
    "skeleton_contains": "我昨天把報告交給老師",
-   "should_report_no_flaw": true
+   "should_report_no_flaw": true,
+   "blindspot": null
   },
   "labeled_by": "draft"
  },
@@ -303,7 +303,8 @@
   "expected": {
    "rules": [],
    "skeleton_contains": "期中考數學考了七十八分",
-   "should_report_no_flaw": true
+   "should_report_no_flaw": true,
+   "blindspot": null
   },
   "labeled_by": "draft"
  },
@@ -313,7 +314,8 @@
   "expected": {
    "rules": [],
    "skeleton_contains": "會議改到明天下午兩點",
-   "should_report_no_flaw": true
+   "should_report_no_flaw": true,
+   "blindspot": null
   },
   "labeled_by": "draft"
  },
@@ -323,7 +325,8 @@
   "expected": {
    "rules": [],
    "skeleton_contains": "三個方向",
-   "should_report_no_flaw": true
+   "should_report_no_flaw": true,
+   "blindspot": null
   },
   "labeled_by": "draft"
  },
@@ -333,7 +336,8 @@
   "expected": {
    "rules": [],
    "skeleton_contains": "輪流打掃浴室",
-   "should_report_no_flaw": true
+   "should_report_no_flaw": true,
+   "blindspot": null
   },
   "labeled_by": "draft"
  },
@@ -343,7 +347,118 @@
   "expected": {
    "rules": [],
    "skeleton_contains": "預算超出百分之二十",
-   "should_report_no_flaw": true
+   "should_report_no_flaw": true,
+   "blindspot": null
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g31",
+  "text": "我明天要去面試，所以今晚先把履歷印好。",
+  "expected": {
+   "rules": [],
+   "skeleton_contains": "",
+   "should_report_no_flaw": true,
+   "blindspot": null
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g32",
+  "text": "因為下雨，所以我改搭公車上班。",
+  "expected": {
+   "rules": [],
+   "skeleton_contains": "",
+   "should_report_no_flaw": true,
+   "blindspot": null
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g33",
+  "text": "醫生說我血壓偏高，所以我開始減少吃鹽。",
+  "expected": {
+   "rules": [],
+   "skeleton_contains": "",
+   "should_report_no_flaw": true,
+   "blindspot": null
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g34",
+  "text": "這個月電費比上個月多了三百元，因為冷氣開得比較多。",
+  "expected": {
+   "rules": [],
+   "skeleton_contains": "多了三百元",
+   "should_report_no_flaw": true,
+   "blindspot": null
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g35",
+  "text": "我上週寄了五份履歷，收到兩個面試通知。",
+  "expected": {
+   "rules": [],
+   "skeleton_contains": "寄了五份履歷",
+   "should_report_no_flaw": true,
+   "blindspot": null
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g36",
+  "text": "老師說作業週五截止，所以我週四晚上寫完。",
+  "expected": {
+   "rules": [],
+   "skeleton_contains": "",
+   "should_report_no_flaw": true,
+   "blindspot": null
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g37",
+  "text": "我打算明年考研究所，所以每天下班後讀兩小時書，週末就不安排聚會。",
+  "expected": {
+   "rules": [],
+   "skeleton_contains": "",
+   "should_report_no_flaw": true,
+   "blindspot": "NO_REVISION"
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g38",
+  "text": "雖然搬到郊區通勤會變長，但房租可以省一半，所以我決定搬，如果通勤超過一小時再考慮搬回來。",
+  "expected": {
+   "rules": [],
+   "skeleton_contains": "",
+   "should_report_no_flaw": true,
+   "blindspot": null
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g39",
+  "text": "我覺得這台筆電值得買，續航十小時，重量一公斤，但價格比較高。",
+  "expected": {
+   "rules": [],
+   "skeleton_contains": "",
+   "should_report_no_flaw": true,
+   "blindspot": null
+  },
+  "labeled_by": "draft"
+ },
+ {
+  "id": "g40",
+  "text": "我覺得這個方案很好，成本低、上手快、團隊也支持。",
+  "expected": {
+   "rules": [],
+   "skeleton_contains": "",
+   "should_report_no_flaw": true,
+   "blindspot": "ONE_SIDED"
   },
   "labeled_by": "draft"
  }

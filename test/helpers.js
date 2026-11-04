@@ -12,7 +12,7 @@ export function allTemplates() {
   const out = [];
   for (const list of Object.values(templates.findings)) for (const x of list) out.push(typeof x === 'string' ? x : x.t);
   for (const list of Object.values(templates.questions)) out.push(...list);
-  out.push(...templates.fallback);
+  for (const b of Object.values(templates.blindspots)) out.push(b.note, ...b.questions);
   return out;
 }
 

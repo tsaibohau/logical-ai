@@ -37,9 +37,21 @@ test('CAUSAL_JUMP：有中介說明就不觸發', () => {
   assert.equal(run('CAUSAL_JUMP', '因為這個專案的截止日提前了兩週，所以這個專案的測試時間被壓縮。').length, 0);
 });
 
-test('UNDEFINED_TERM：抽象評價無標準', () => {
-  const f = run('UNDEFINED_TERM', '我覺得自己很失敗。');
+test('UNDEFINED_TERM：抽象評價被拿來推論', () => {
+  const f = run('UNDEFINED_TERM', '我覺得自己很失敗，所以應該放棄。');
   assert.equal(f[0].slots.X, '失敗');
+});
+test('UNDEFINED_TERM：單純描述評價不追問', () => {
+  assert.equal(run('UNDEFINED_TERM', '我覺得自己很失敗。').length, 0);
+});
+test('CAUSAL_JUMP：「所以」接自己的安排是正常手段推論', () => {
+  assert.equal(run('CAUSAL_JUMP', '我下個月要搬家，所以這週末先打包書房。').length, 0);
+});
+test('OVERGENERALIZE：「一定」「根本」是語氣，不算以偏概全', () => {
+  assert.equal(run('OVERGENERALIZE', '這段關係根本就是錯的。').length, 0);
+});
+test('GOAL_CONFLICT：已寫出取捨就不算衝突', () => {
+  assert.equal(run('GOAL_CONFLICT', '我想換工作，但是我也想留在台北，所以只找台北的職缺。').length, 0);
 });
 test('UNDEFINED_TERM：/def 後不再觸發', () => {
   const st = { defs: { 失敗: { text: '連續三個月收入低於三萬', history: [] } }, tags: {} };

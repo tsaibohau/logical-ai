@@ -13,12 +13,40 @@ test('全流程輸出三區塊與 trace', () => {
   for (const t of r.trace) for (const s of t.spans) assert.equal(r.body.slice(s.start, s.end), s.text);
 });
 
-test('無漏洞：輸出「未發現實質漏洞」且只有一題', () => {
+test('推論成立又沒有盲點：不出任何問題', () => {
   const r = audit('上週我跑步三次，每次五公里。');
   assert.equal(r.noFlaw, true);
-  assert.equal(r.flawText, '未發現實質漏洞');
-  assert.equal(r.questions.length, 1);
+  assert.equal(r.flawText, '推論成立，未發現實質漏洞');
+  assert.equal(r.blindspot, null);
+  assert.equal(r.blindspotText, '未發現盲點');
+  assert.equal(r.questions.length, 0);
   assert.equal(r.skeleton.text, '上週我跑步三次');
+});
+
+test('不鑽牛角尖：正常的手段推論、已解決的取捨、單純的描述都不追問', () => {
+  const sound = [
+    '我下個月要搬家，所以這週末先打包書房。',
+    '因為明天早上九點要開會，所以我今晚十一點前睡覺。',
+    '他說他明天會晚到，所以我先把資料寄給他。',
+    '我很努力準備考試，最後考了九十分，我很開心。',
+    '雖然我很累，但這週的報告都交出去了。',
+    '這次失敗了，我想知道下次可以怎麼調整。',
+    '我每天早上都會跑步，已經持續三個月了。',
+  ];
+  for (const s of sound) {
+    const r = audit(s);
+    assert.equal(r.noFlaw, true, `${s} → ${r.flaws.map((f) => f.ruleId)}`);
+    assert.equal(r.questions.length, 0, `${s} → ${r.questions.map((q) => q.text)}`);
+  }
+});
+
+test('推論成立但有結構性盲點：只問一題盲點', () => {
+  const r = audit('我想換工作，但是我也想留在台北，所以只找台北的職缺。');
+  assert.equal(r.noFlaw, true);
+  assert.equal(r.blindspot.ruleId, 'NO_REVISION');
+  assert.equal(r.questions.length, 1);
+  assert.equal(audit('我希望今年存到二十萬，所以每個月固定存一萬七。').blindspot.ruleId, 'COST_UNSTATED');
+  assert.equal(audit('我覺得這份工作還不錯，薪水準時發，同事也好相處。').blindspot.ruleId, 'ONE_SIDED');
 });
 
 test('指令行不被審計，狀態向後帶', () => {
@@ -58,6 +86,7 @@ test('輸出可由模板與原文片段完整解釋', () => {
     const r = audit(s);
     for (const f of r.flaws) assert.ok(explainedBy(f.note, userSources(r)), f.note);
     for (const q of r.questions) assert.ok(explainedBy(q.text, userSources(r)), q.text);
+    if (r.blindspot) assert.ok(explainedBy(r.blindspot.note, userSources(r)), r.blindspot.note);
     assert.ok(skeletonOk(r.skeleton, r.body), r.skeleton.text);
   }
 });
@@ -74,9 +103,4 @@ test('回歸：使用者回報的案例（已定義的詞不被追問、定義�
   assert.deepEqual(r.flaws.map((f) => f.ruleId).sort(), ['CAUSAL_JUMP', 'DEF_MISMATCH']);
   assert.ok(!r.messages.some((m) => m.data?.kind === 'vague' && m.data.word === '成功'), '「營收翻倍」是可操作定義');
   for (const q of r.questions) assert.ok(explainedBy(q.text, userSources(r)), q.text);
-});
-
-test('無漏洞時的邊界提問不挑已定義的詞', () => {
-  const r = audit('/def 成功 = 營收翻倍\n我想要成功，也想要快樂。');
-  for (const q of r.questions) assert.ok(!q.slots.X || q.slots.X !== '成功', q.text);
 });

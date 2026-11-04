@@ -30,48 +30,22 @@ function pick(list, slots, seed) {
   return ok[seed % ok.length];
 }
 
-/** 沒有漏洞時，挑一個使用者的詞來問邊界。 */
-export function boundaryWord(tokens) {
-  // 已 /def 的詞不再拿來問邊界。
-  const content = tokens.filter((t) => !t.tags.includes('PUNCT') && !t.tags.includes('DEFINED'));
-  const order = [
-    (t) => t.tags.includes('ABSTRACT') && !t.tags.includes('DEFINED'),
-    (t) => t.tags.includes('VAGUE'),
-    (t) => t.tags.includes('ABSTRACT'),
-    (t) => t.tags.includes('ABSOLUTE') || t.tags.includes('EMOTION'),
-    (t) => t.tags.includes('ACTION') && t.text.length >= 2,
-  ];
-  for (const f of order) {
-    const hit = content.find(f);
-    if (hit) return hit;
-  }
-  const words = content.filter((t) => t.tags.includes('WORD') && [...t.text].length >= 2 && /\p{Script=Han}/u.test(t.text));
-  if (!words.length) return null;
-  return words.reduce((a, b) => (b.text.length > a.text.length ? b : a));
-}
-
 /**
+ * 只針對推論鏈的斷點出題（預設只問最嚴重的一個）。
  * @param {object[]} selected 已選出的 finding（規則不重複）
  * @param {object[]} tokens
  * @param {string} body 原文，用於雜湊
  */
-export function buildQuestions(selected, tokens, body) {
+export function buildQuestions(selected, tokens, body, { max = 1 } = {}) {
   const seed = hashString(body);
   const out = [];
   for (const f of selected) {
-    if (out.some((q) => q.ruleId === f.ruleId)) continue; // 兩題不可同一規則
+    if (out.some((q) => q.ruleId === f.ruleId)) continue; // 不可來自同一規則
     const list = templates.questions[f.ruleId] || [];
     const p = pick(list, f.slots, seed);
     if (p) out.push({ ruleId: f.ruleId, templateId: `${f.ruleId}#${p.i}`, text: p.text, slots: f.slots, spans: f.spans });
-    if (out.length >= 2) break;
+    if (out.length >= max) break;
   }
-  if (!selected.length) {
-    const w = boundaryWord(tokens);
-    if (w) {
-      const slots = { X: w.text };
-      const p = pick(templates.fallback, slots, seed);
-      out.push({ ruleId: 'BOUNDARY', templateId: `fallback#${p.i}`, text: p.text, slots, spans: [{ start: w.start, end: w.end, text: w.text }] });
-    }
-  }
+  // 沒有漏洞時不硬問：推論成立就不出題（盲點另由 blindspots.js 判斷）。
   return out;
 }

@@ -23,7 +23,7 @@ export const CONFIG = {
   counterPenalty: 0.25, // 句中已有反證（例如數字）時扣分
   causal: { shortLen: 12, timeOnlyBonus: 0.15, certainBonus: 0.15 },
   emotion: { minConclusionWeight: 0.5, multiConclusionBonus: 0.1 },
-  binary: { onlyXPenalty: 0.05 },
+  binary: { onlyXPenalty: 0.35 }, // 只有「只能 X」、沒寫出另一端時，多半是正常的限制描述
   slotMaxLen: 24,
 };
 
@@ -32,6 +32,13 @@ export const RULE_IDS = Object.keys(CONFIG.base);
 // 啟發式用的固定字串（不是背景知識，只是句式標記）。
 const CAUSE_FIRST = new Set(['因為', '由於', '都是因為', '就是因為', '只因為', '之所以']);
 const SEQ_MARKERS = ['之後', '以後', '後來', '自從', '從那天起', '從那時起', '那次之後'];
+// 確定語氣（一定、根本…）講的是把握程度，不是範圍；不拿來判以偏概全。
+const CERTAINTY_WORDS = new Set(['一定', '絕對', '根本', '不可能', '肯定']);
+// 「所以」後面接的是說話者自己的安排時，屬於正常的手段推論，不算因果跳接。
+const SELF_ACTION_MARKERS = ['先', '就去', '開始', '改成', '只找', '固定', '安排', '提早', '準時', '打包', '準備好', '記得'];
+const NOT_SELF_ACTION = ['被', '大家', '別人', '沒人', '沒有人', '他們', '對方'];
+// 衝突之後若接了取捨，表示使用者已自己解決。
+const RESOLUTION_MARKERS = ['所以', '決定', '只找', '只做', '優先', '先', '選擇', '寧可', '寧願'];
 const CERTAIN_MARKERS = ['一定', '絕對', '肯定', '必然', '必定', '保證', '鐵定'];
 const RESULT_SPLIT = ['所以', '才會', '因此', '於是', '結果', '導致', '造成', '使得'];
 const MORE_OPTIONS = ['第三', '其他選項', '其他選擇', '另一個選項', '另一個選擇', '還有一個選項', '還可以', '或者也可以'];
@@ -148,6 +155,7 @@ export function OVERGENERALIZE(tokens, sentences) {
       const st = bs.get(sent.idx) || [];
       const hits = st.filter((t) => has(t, 'ABSOLUTE')).filter((t) => {
         const p = prevToken(st, t);
+        if (CERTAINTY_WORDS.has(t.text)) return false;
         return !(p && has(p, 'NEGATION') && p.end === t.start); // 「不是每次」不算
       });
       if (!hits.length) continue;
@@ -218,7 +226,11 @@ export function CAUSAL_JUMP(tokens, sentences) {
       const timeOnly = SEQ_MARKERS.some((m) => sent.text.includes(m) || cause.includes(m));
       const short = strip(cause).length <= CONFIG.causal.shortLen && strip(effect).length <= CONFIG.causal.shortLen;
       const linked = sharesContent(cause, effect);
-      if (!timeOnly && !certain && !(short && !linked)) return;
+      const effTokens = st.filter((t) => t.start >= c.end);
+      const selfAction = (effTokens.some((t) => has(t, 'ACTION')) || SELF_ACTION_MARKERS.some((m) => effect.includes(m)))
+        && !NOT_SELF_ACTION.some((m) => effect.includes(m))
+        && !effTokens.some((t) => t.weight >= 0.5 && ['ABSTRACT', 'ABSOLUTE', 'EMOTION', 'MINDREAD', 'OBLIGATION'].some((g) => has(t, g))); // 「印好」的「好」這類低權重詞不算評價
+      if (!timeOnly && !certain && !(short && !linked && !selfAction)) return;
 
       let sev = CONFIG.base.CAUSAL_JUMP * c.weight + bonus(causal.length);
       if (timeOnly) sev += CONFIG.causal.timeOnlyBonus;
@@ -240,6 +252,9 @@ export function UNDEFINED_TERM(tokens, sentences) {
     const st = bs.get(sent.idx) || [];
     const hasStandard = st.some((t) => has(t, 'NUMBER') || has(t, 'STANDARD'));
     if (hasStandard) continue;
+    // 只有當評價詞被拿來推論（因果、義務、絕對化）時才算漏洞；單純描述感受或評價不追問。
+    const carries = st.some((t) => has(t, 'CAUSAL') || has(t, 'OBLIGATION') || (has(t, 'ABSOLUTE') && t.weight >= 0.7));
+    if (!carries) continue;
     for (const t of st) {
       if (!has(t, 'ABSTRACT') || has(t, 'DEFINED')) continue;
       if (!byWord.has(t.text)) byWord.set(t.text, { first: t, sent, hits: [] });
@@ -372,6 +387,11 @@ export function GOAL_CONFLICT(tokens, sentences) {
       const A = target(g1, k.sentIdx === g1.sentIdx ? k.start : null);
       const B = target(g2);
       if (!A || !B || A === B || sharesContent(A, B)) continue;
+      // 衝突之後使用者已寫出取捨（「所以只找台北的職缺」），就不是盲目衝突。
+      const g2Sent = sentences[g2.sentIdx];
+      const after = slice(g2Sent, clauseAt(g2Sent, g2.end).end, g2Sent.end)
+        + para.filter((x) => x.idx > g2.sentIdx).map((x) => x.text).join('');
+      if (RESOLUTION_MARKERS.some((m) => after.includes(m))) continue;
       const sev = CONFIG.base.GOAL_CONFLICT * ((g1.weight + g2.weight) / 2) + bonus(goals.length - 1);
       out.push(finding('GOAL_CONFLICT', sev, [g1, k, g2].map(span), { A, B, X: k.text }, g1.sentIdx));
       break;

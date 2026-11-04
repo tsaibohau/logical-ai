@@ -4,14 +4,16 @@
 
 ## 這是什麼
 
-純前端、離線的「邏輯審計」網站：輸入一段文字 → 輸出骨架、1～2 個漏洞、1～2 個封閉式提問。入口是 `src/audit.js` 的 `audit(input, userState, { previous })`。
+純前端、離線的「邏輯審計」網站：輸入一段文字 → 輸出骨架、推論鏈（成立，或 1～2 個斷點並問最嚴重的一題）、盲點（0 或 1 題）。
+
+**核心原則：不鑽牛角尖。** 推論成立就放行；沒有缺口就一題都不問。新增規則時，先確認它不會在正常的手段推論、已寫出的取捨、單純的描述上觸發（`test/audit.test.js` 的「不鑽牛角尖」測試）。入口是 `src/audit.js` 的 `audit(input, userState, { previous })`。
 
 ## 鐵則（違反任何一條都算失敗）
 
 1. **零網路、零 API、零外部資料。** `src/` 不得出現 `fetch(`、`XMLHttpRequest`、`WebSocket` 等。資料只能透過 `src/data.js` 的 JSON module 靜態載入。
 2. **輸出只能是「模板固定字串 + 使用者原文片段」。** 不得寫入使用者沒寫過的人事物或常識判斷。新增模板放 `data/templates.json`，欄位 `{X}` 等只能填原文子字串；`{D}` 填使用者 `/def` 寫下的定義。
 3. **不給建議、行動清單，不寒暄、不安慰、不稱讚。**
-4. **不捏造漏洞。** 低於 `CONFIG.threshold` 就輸出「未發現實質漏洞」。
+4. **不捏造漏洞、不硬問。** 低於 `CONFIG.threshold` 就輸出「推論成立，未發現實質漏洞」；沒有結構性盲點就輸出「未發現盲點」，不出題。
 5. **可追溯。** 每個 finding 帶 `ruleId` 與 `spans`（原文位置），`result.trace` 彙整所有判斷。
 6. 純 HTML + ES Modules + 原生 JS。不要加打包工具、框架或 npm 執行期依賴。測試只用 `node:test`。
 
@@ -21,7 +23,8 @@
 - `src/lexicon.js`：合併優先序 `/def` > `/tag` > 內建。含「…」的詞是不連續詞（如「要嘛…要嘛」）。
 - `src/commands.js`：純函式，`parseInput` + `executeCommands`。不碰 DOM／storage。
 - `src/rules.js`：8 條規則（第 8 條 `DEF_MISMATCH` 是使用者回報後加的），每條 `(tokens, sentences, state) -> Finding[]`。門檻與權重都在 `CONFIG`。
-- `src/skeleton.js`、`src/questions.js`：骨架與提問。
+- `src/skeleton.js`、`src/questions.js`：骨架與斷點提問。
+- `src/blindspots.js`：盲點，只看原文有沒有寫到代價、改變條件、反方向理由。
 - `src/ui.js`：上半部是可測試的純函式，`init()` 只在瀏覽器執行。
 - `data/lexicon.json` 類別固定為 10 類；`data/observable.json` 是輔助字表（不能 /tag）。
 

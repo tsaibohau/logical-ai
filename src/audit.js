@@ -5,6 +5,7 @@ import { tokenize } from './tokenize.js';
 import { runRules, selectFindings, CONFIG } from './rules.js';
 import { pickSkeleton } from './skeleton.js';
 import { buildQuestions, renderTemplate } from './questions.js';
+import { detectBlindspot } from './blindspots.js';
 import { templates } from './data.js';
 
 /** 本輪出現過、且帶類別的詞 -> 類別（供下一輪比對）。 */
@@ -61,6 +62,8 @@ export function audit(input, userState = emptyState(), opts = {}) {
     flawText: '',
     skeleton: null,
     questions: [],
+    blindspot: null,
+    blindspotText: '',
     trace: [],
     wordTags: {},
     crossTurn: [],
@@ -73,7 +76,9 @@ export function audit(input, userState = emptyState(), opts = {}) {
   const findings = runRules(tk.tokens, tk.sentences, state);
   const selected = selectFindings(findings, CONFIG);
   const skeleton = pickSkeleton(body, tk.tokens, tk.sentences);
-  const questions = buildQuestions(selected, tk.tokens, body);
+  const breakQuestions = buildQuestions(selected, tk.tokens, body);
+  const blindspot = detectBlindspot(body, tk.tokens);
+  const questions = [...breakQuestions, ...(blindspot ? [{ ...blindspot, section: 'blindspot' }] : [])];
   const wordTags = collectWordTags(tk.tokens);
 
   result.findings = findings;
@@ -82,13 +87,16 @@ export function audit(input, userState = emptyState(), opts = {}) {
   result.flawText = result.noFlaw ? templates.noFlaw : '';
   result.skeleton = skeleton;
   result.questions = questions;
+  result.blindspot = blindspot;
+  result.blindspotText = blindspot ? '' : templates.noBlindspot;
   result.wordTags = wordTags;
   result.crossTurn = compareTurns(opts.previous, wordTags, messages);
 
   result.trace = [
     { section: 'skeleton', ruleId: skeleton.trace.ruleId, spans: skeleton.trace.spans, evidence: skeleton.trace.evidence || [] },
     ...selected.map((f) => ({ section: 'flaw', ruleId: f.ruleId, severity: f.severity, spans: f.spans })),
-    ...questions.map((q) => ({ section: 'question', ruleId: q.ruleId, templateId: q.templateId, spans: q.spans })),
+    ...breakQuestions.map((q) => ({ section: 'question', ruleId: q.ruleId, templateId: q.templateId, spans: q.spans })),
+    ...(blindspot ? [{ section: 'blindspot', ruleId: blindspot.ruleId, templateId: blindspot.templateId, spans: blindspot.spans }] : []),
     ...tk.tokens.filter((t) => t.tags.includes('DEFINED')).map((t) => ({
       section: 'defined', ruleId: 'DEFINED', spans: [{ start: t.start, end: t.end, text: t.text }], def: t.def,
     })),

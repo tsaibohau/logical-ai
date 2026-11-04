@@ -11,6 +11,7 @@
   --m-flaw: #fde2cf;
   --m-question: #e3e4fb;
   --m-defined: #e9e2f8;
+  --m-blind: #fff2b3;
   --warn: #8a5a00;
   --error: #b3261e;
   --radius: 12px;
@@ -29,6 +30,7 @@
     --m-flaw: #5a3317;
     --m-question: #2b2f63;
     --m-defined: #3d2f5f;
+    --m-blind: #5a4b10;
     --warn: #f2c66d;
     --error: #ff8a80;
   }
@@ -99,6 +101,9 @@ mark, .m { color: inherit; border-radius: 3px; padding: 0 1px; }
 .m-skeleton { background: var(--m-skeleton); }
 .m-flaw { background: var(--m-flaw); }
 .m-question { background: var(--m-question); }
+.m-blind { background: var(--m-blind); }
+.ask { margin-top: 6px; font-weight: 600; }
+.ok { color: var(--muted); }
 .m-defined { background: var(--m-defined); text-decoration: underline dotted; }
 mark.m-flaw.m-question { background: linear-gradient(var(--m-flaw), var(--m-question)); }
 .legend { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; font-size: .8rem; }
@@ -116,3 +121,4 @@ mark.m-flaw.m-question { background: linear-gradient(var(--m-flaw), var(--m-ques
 .history-item p { margin: 6px 0 0; white-space: pre-wrap; }
 .cross { border-left: 3px solid var(--warn); }
 .visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.list li.ok { list-style: none; margin-left: -1.3em; }

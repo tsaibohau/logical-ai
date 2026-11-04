@@ -19,7 +19,8 @@ for (const g of gold) {
     for (const f of r.flaws) assert.ok(explainedBy(f.note, userSources(r)), `漏洞描述含外部詞：${f.note}`);
     for (const q of r.questions) assert.ok(explainedBy(q.text, userSources(r)), `提問含外部詞：${q.text}`);
     assert.ok(skeletonOk(r.skeleton, r.body), `骨架不是原文：${r.skeleton.text}`);
-    if (r.noFlaw) assert.equal(r.flawText, '未發現實質漏洞');
+    if (r.blindspot) assert.ok(explainedBy(r.blindspot.note, userSources(r)), `盲點描述含外部詞：${r.blindspot.note}`);
+    if (r.noFlaw) assert.equal(r.flawText, '推論成立，未發現實質漏洞');
     // 每個判斷都可追溯
     for (const t of r.trace) {
       assert.ok(t.ruleId);

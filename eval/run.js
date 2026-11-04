@@ -15,6 +15,10 @@ let posTotal = 0;
 let posMissedAll = 0;
 let skTotal = 0;
 let skHit = 0;
+let bsTotal = 0;
+let bsHit = 0;
+let quietTotal = 0;
+let quietOk = 0;
 const failures = [];
 const rows = [];
 
@@ -42,6 +46,20 @@ for (const g of gold) {
     if (r.noFlaw) { posMissedAll++; problems.push('應有漏洞卻輸出「未發現實質漏洞」'); }
   }
 
+  // 盲點：只評估有標註的案例（null 表示應該沒有盲點）。
+  if ('blindspot' in g.expected) {
+    bsTotal++;
+    const gotB = r.blindspot ? r.blindspot.ruleId : null;
+    if (gotB === g.expected.blindspot) bsHit++;
+    else problems.push(`盲點不符（期望 ${g.expected.blindspot ?? '無'}，實際 ${gotB ?? '無'}）`);
+    // 推論成立、也沒有盲點的案例：一題都不該問。
+    if (g.expected.should_report_no_flaw && g.expected.blindspot === null) {
+      quietTotal++;
+      if (r.questions.length === 0) quietOk++;
+      else problems.push(`應該完全不問，卻問了 ${r.questions.length} 題`);
+    }
+  }
+
   if (g.expected.skeleton_contains) {
     skTotal++;
     if (r.skeleton.text.includes(g.expected.skeleton_contains)) skHit++;
@@ -56,7 +74,9 @@ const pct = (a, b) => (b === 0 ? '—' : `${((a / b) * 100).toFixed(0)}%`);
 const lines = [];
 lines.push('# 評估報告');
 lines.push('');
-lines.push('> **警告：以下數字來自 `eval/gold.json` 的 30 筆合成資料（`labeled_by: "draft"`），由同一個開發流程撰寫與標註，不能當作真實準確度。** 真實準確度需以真實輸入與人工標註重新評估。');
+lines.push(`> **警告：以下數字來自 \`eval/gold.json\` 的 ${gold.length} 筆合成資料（\`labeled_by: "draft"\`），由同一個開發流程撰寫與標註，不能當作真實準確度。** 真實準確度需以真實輸入與人工標註重新評估。`);
+lines.push('>');
+lines.push('> 設計改為「推論成立就放行，只問結構性盲點」後，g07～g09 依新設計改標為無漏洞；g31～g40 是改版後新寫、改規則時沒有用過的「推論成立」案例。');
 lines.push('');
 lines.push(`- 資料筆數：${gold.length}（應有漏洞 ${posTotal}、應無漏洞 ${negTotal}）`);
 lines.push(`- 門檻 threshold：${CONFIG.threshold}；每次最多輸出 ${CONFIG.maxFlaws} 項`);
@@ -78,6 +98,8 @@ lines.push('');
 lines.push(`- 無漏洞案例誤報率：${negFalseAlarm}/${negTotal} = ${pct(negFalseAlarm, negTotal)}`);
 lines.push(`- 有漏洞案例完全漏抓（輸出無漏洞）：${posMissedAll}/${posTotal} = ${pct(posMissedAll, posTotal)}`);
 lines.push(`- 骨架命中率：${skHit}/${skTotal} = ${pct(skHit, skTotal)}`);
+lines.push(`- 盲點判斷正確率（有標註者）：${bsHit}/${bsTotal} = ${pct(bsHit, bsTotal)}`);
+lines.push(`- 「推論成立且無盲點」案例完全不問的比例：${quietOk}/${quietTotal} = ${pct(quietOk, quietTotal)}`);
 lines.push(`- 完全正確的案例：${gold.length - failures.length}/${gold.length}`);
 lines.push('');
 lines.push('## 失敗案例');
@@ -91,6 +113,7 @@ for (const f of failures) {
   lines.push('```');
   lines.push(`- 期望：${f.g.expected.rules.join('、') || '（無漏洞）'}；實際：${f.got.join('、') || '（無漏洞）'}`);
   lines.push(`- 骨架輸出：${f.r.skeleton.text}`);
+  if (f.r.questions.length) lines.push(`- 提問：${f.r.questions.map((q) => q.text).join(' ／ ')}`);
   lines.push(`- 問題：${f.problems.join('；')}`);
   const all = f.r.findings.map((x) => `${x.ruleId}:${x.severity}`).join(' ');
   lines.push(`- 全部候選：${all || '（無）'}`);
@@ -105,6 +128,8 @@ const summary = {
   perRule: Object.fromEntries(RULE_IDS.map((id) => [id, { P: pct(stats[id].tp, stats[id].tp + stats[id].fp), R: pct(stats[id].tp, stats[id].tp + stats[id].fn) }])),
   negativeFalseAlarm: pct(negFalseAlarm, negTotal),
   skeletonHit: pct(skHit, skTotal),
+  blindspot: pct(bsHit, bsTotal),
+  quietWhenSound: `${quietOk}/${quietTotal}`,
   failures: failures.length,
 };
 console.log(JSON.stringify(summary, null, 2));
