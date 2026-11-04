@@ -114,3 +114,21 @@ test('clauseAt', () => {
   const tk = tokenize('甲乙，丙丁戊。', buildLexicon());
   assert.equal(clauseAt(tk.sentences[0], 4).text, '丙丁戊');
 });
+
+test('DEF_MISMATCH：用另一套依據證明已定義的詞', () => {
+  const st = { defs: { 成功: { text: '營收翻倍', history: [] } }, tags: {} };
+  const f = run('DEF_MISMATCH', 'APP 下載量暴增300%，這證明我們的產品策略極為成功。', st);
+  assert.equal(f.length, 1);
+  assert.deepEqual([f[0].slots.X, f[0].slots.D], ['成功', '營收翻倍']);
+});
+test('DEF_MISMATCH：依據符合定義、或子句沒有依據時不觸發', () => {
+  const st = { defs: { 成功: { text: '營收翻倍', history: [] } }, tags: {} };
+  assert.equal(run('DEF_MISMATCH', '今年營收翻倍，所以算成功。', st).length, 0);
+  assert.equal(run('DEF_MISMATCH', '我覺得很成功，今年下載量三萬。', st).length, 0);
+});
+test('CAUSAL_JUMP：檢查句中每個因果詞，「只要…就一定」視為必然化', () => {
+  const f = above(run('CAUSAL_JUMP', '下載量激增是因為我們投放了廣告，因此只要再加倍投放廣告，淨利潤就一定能翻倍。'));
+  assert.equal(f.length, 1);
+  assert.ok(f[0].flags.certain);
+  assert.deepEqual([f[0].slots.A, f[0].slots.B], ['再加倍投放廣告', '淨利潤就一定能翻倍']);
+});

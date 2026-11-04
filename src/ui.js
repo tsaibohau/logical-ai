@@ -12,6 +12,7 @@ export const RULE_LABELS = {
   MINDREAD: '讀心',
   EMOTION_AS_FACT: '情緒當事實',
   GOAL_CONFLICT: '目標衝突',
+  DEF_MISMATCH: '定義不符',
   BOUNDARY: '定義邊界',
   SKELETON: '骨架',
   SKELETON_NONE: '無骨架',

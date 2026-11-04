@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { audit, compareTurns } from '../src/audit.js';
 import { emptyState } from '../src/lexicon.js';
-import { explainedBy, skeletonOk } from './helpers.js';
+import { explainedBy, skeletonOk, userSources } from './helpers.js';
 
 test('全流程輸出三區塊與 trace', () => {
   const r = audit('我每天都很努力工作，但是老闆覺得我不夠認真。我總是被忽略。');
@@ -56,8 +56,8 @@ test('輸出可由模板與原文片段完整解釋', () => {
   ];
   for (const s of samples) {
     const r = audit(s);
-    for (const f of r.flaws) assert.ok(explainedBy(f.note, r.body), f.note);
-    for (const q of r.questions) assert.ok(explainedBy(q.text, r.body), q.text);
+    for (const f of r.flaws) assert.ok(explainedBy(f.note, userSources(r)), f.note);
+    for (const q of r.questions) assert.ok(explainedBy(q.text, userSources(r)), q.text);
     assert.ok(skeletonOk(r.skeleton, r.body), r.skeleton.text);
   }
 });
@@ -65,4 +65,18 @@ test('輸出可由模板與原文片段完整解釋', () => {
 test('Segmenter 關閉時仍可運作', () => {
   const r = audit('我總是被忽略。', emptyState(), { useSegmenter: false });
   assert.equal(r.flaws[0].ruleId, 'OVERGENERALIZE');
+});
+
+test('回歸：使用者回報的案例（已定義的詞不被追問、定義被拿來比對）', () => {
+  const input = '/def 成功 = 營收翻倍\n/def 核心指標 = APP 下載量\n我們公司上個季度的 APP 下載量比去年同期暴增300%，這證明我們的產品策略極為成功。下載量激增是因為我們投放了百萬級別的免費送咖啡廣告，因此只要下個季度再加倍投放廣告，公司的淨利潤就一定能翻倍。';
+  const r = audit(input);
+  assert.equal(r.skeleton.text, '我們公司上個季度的 APP 下載量比去年同期暴增300%');
+  assert.deepEqual(r.flaws.map((f) => f.ruleId).sort(), ['CAUSAL_JUMP', 'DEF_MISMATCH']);
+  assert.ok(!r.messages.some((m) => m.data?.kind === 'vague' && m.data.word === '成功'), '「營收翻倍」是可操作定義');
+  for (const q of r.questions) assert.ok(explainedBy(q.text, userSources(r)), q.text);
+});
+
+test('無漏洞時的邊界提問不挑已定義的詞', () => {
+  const r = audit('/def 成功 = 營收翻倍\n我想要成功，也想要快樂。');
+  for (const q of r.questions) assert.ok(!q.slots.X || q.slots.X !== '成功', q.text);
 });

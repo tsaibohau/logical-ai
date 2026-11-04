@@ -5,6 +5,7 @@
 export const TIME_WORDS = [
   '昨天', '今天', '明天', '前天', '後天', '昨晚', '今晚', '今早', '昨日', '今日',
   '上週', '上周', '上星期', '上禮拜', '這週', '這周', '本週', '下週', '下周', '下星期',
+  '上個季度', '這個季度', '下個季度', '上季', '本季', '下季', '上半年', '下半年',
   '上個月', '這個月', '下個月', '上月', '本月', '下月', '去年', '今年', '明年', '前年',
   '每天', '每日', '每週', '每周', '每月', '每年', '每晚', '每早',
   '早上', '晚上', '中午', '下午', '半夜', '凌晨', '週末', '周末', '平日',
@@ -13,6 +14,9 @@ export const TIME_WORDS = [
   '週一', '週二', '週三', '週四', '週五', '週六', '週日',
   '禮拜一', '禮拜二', '禮拜三', '禮拜四', '禮拜五', '禮拜六', '禮拜天',
 ];
+
+/** 倍數詞：沒有阿拉伯數字，但本身就是可量測的比例。 */
+export const QUANTITY_WORDS = ['翻倍', '加倍', '減半', '倍增', '翻兩倍', '翻三倍'];
 
 /** 否定詞（內建）。 */
 export const NEGATION_WORDS = ['不', '沒', '沒有', '別', '無', '未', '不是', '不會', '不能', '沒辦法', '並非'];
@@ -189,6 +193,7 @@ export function tokenize(text, lex = emptyLexicon(), opts = {}) {
   const base = new Map();
   for (const w of TIME_WORDS) base.set(w, { tags: ['TIME'], weight: 1, priority: 0 });
   for (const w of NEGATION_WORDS) base.set(w, { tags: ['NEGATION'], weight: 1, priority: 0 });
+  for (const w of QUANTITY_WORDS) base.set(w, { tags: ['NUMBER'], weight: 1, priority: 0 });
   const maxLen = Math.max(lex.maxLen || 0, ...TIME_WORDS.map((w) => w.length));
 
   const lookup = (w) => {

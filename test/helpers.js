@@ -16,11 +16,17 @@ export function allTemplates() {
   return out;
 }
 
-/** 輸出是否能由某個模板、且只用原文片段填出。 */
-export function explainedBy(output, body, list = allTemplates()) {
+/** 使用者自己寫下的文字：本文 + /def 的定義內容。 */
+export function userSources(result) {
+  return [result.body, ...Object.values(result.state.defs).map((d) => d.text)];
+}
+
+/** 輸出是否能由某個模板、且只用使用者原文片段填出。sources 可以是字串或字串陣列。 */
+export function explainedBy(output, sources, list = allTemplates()) {
+  const src = Array.isArray(sources) ? sources : [sources];
   for (const t of list) {
     const m = output.match(templateRegex(t));
-    if (m && m.slice(1).every((g) => body.includes(g))) return t;
+    if (m && m.slice(1).every((g) => src.some((x) => x.includes(g)))) return t;
   }
   return null;
 }

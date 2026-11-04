@@ -32,12 +32,12 @@ function pick(list, slots, seed) {
 
 /** 沒有漏洞時，挑一個使用者的詞來問邊界。 */
 export function boundaryWord(tokens) {
-  const content = tokens.filter((t) => !t.tags.includes('PUNCT'));
+  // 已 /def 的詞不再拿來問邊界。
+  const content = tokens.filter((t) => !t.tags.includes('PUNCT') && !t.tags.includes('DEFINED'));
   const order = [
     (t) => t.tags.includes('ABSTRACT') && !t.tags.includes('DEFINED'),
     (t) => t.tags.includes('VAGUE'),
     (t) => t.tags.includes('ABSTRACT'),
-    (t) => t.tags.includes('DEFINED'),
     (t) => t.tags.includes('ABSOLUTE') || t.tags.includes('EMOTION'),
     (t) => t.tags.includes('ACTION') && t.text.length >= 2,
   ];

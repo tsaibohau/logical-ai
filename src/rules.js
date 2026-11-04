@@ -16,11 +16,12 @@ export const CONFIG = {
     MINDREAD: 0.65,
     EMOTION_AS_FACT: 0.6,
     GOAL_CONFLICT: 0.6,
+    DEF_MISMATCH: 0.7,
   },
   countBonus: 0.08, // 每多一個命中加分
   maxCountBonus: 0.24,
   counterPenalty: 0.25, // 句中已有反證（例如數字）時扣分
-  causal: { shortLen: 12, timeOnlyBonus: 0.15 },
+  causal: { shortLen: 12, timeOnlyBonus: 0.15, certainBonus: 0.15 },
   emotion: { minConclusionWeight: 0.5, multiConclusionBonus: 0.1 },
   binary: { onlyXPenalty: 0.05 },
   slotMaxLen: 24,
@@ -31,6 +32,7 @@ export const RULE_IDS = Object.keys(CONFIG.base);
 // 啟發式用的固定字串（不是背景知識，只是句式標記）。
 const CAUSE_FIRST = new Set(['因為', '由於', '都是因為', '就是因為', '只因為', '之所以']);
 const SEQ_MARKERS = ['之後', '以後', '後來', '自從', '從那天起', '從那時起', '那次之後'];
+const CERTAIN_MARKERS = ['一定', '絕對', '肯定', '必然', '必定', '保證', '鐵定'];
 const RESULT_SPLIT = ['所以', '才會', '因此', '於是', '結果', '導致', '造成', '使得'];
 const MORE_OPTIONS = ['第三', '其他選項', '其他選擇', '另一個選項', '另一個選擇', '還有一個選項', '還可以', '或者也可以'];
 const CLAUSE_PUNCT = /[，,；;：:。！？!?\n]/;
@@ -165,47 +167,67 @@ export function CAUSAL_JUMP(tokens, sentences) {
     const st = bs.get(sent.idx) || [];
     const causal = st.filter((t) => has(t, 'CAUSAL'));
     if (!causal.length) continue;
-    const c = causal[0];
-    const atStart = strip(slice(sent, sent.start, c.start)) === '';
-    let cause = '';
-    let effect = '';
-    if (CAUSE_FIRST.has(c.text)) {
-      if (atStart) {
-        const second = causal.find((t) => t !== c && RESULT_SPLIT.includes(t.text));
-        if (second) {
-          cause = slice(sent, c.end, second.start);
-          effect = slice(sent, second.end, sent.end);
+    const used = new Set();
+    let best = null;
+    // 每個因果詞都檢查一次，同一句只保留最強的一項。
+    causal.forEach((c, ci) => {
+      if (used.has(c)) return;
+      const prevEnd = ci > 0 ? causal[ci - 1].end : sent.start;
+      const nextStart = ci + 1 < causal.length ? causal[ci + 1].start : sent.end;
+      const atStart = strip(slice(sent, sent.start, c.start)) === '';
+      let cause = '';
+      let effect = '';
+      if (CAUSE_FIRST.has(c.text)) {
+        if (atStart) {
+          const second = causal.find((t) => t !== c && RESULT_SPLIT.includes(t.text));
+          if (second) {
+            used.add(second);
+            cause = slice(sent, c.end, second.start);
+            effect = slice(sent, second.end, sent.end);
+          } else {
+            const cl = clauseAt(sent, c.end);
+            cause = slice(sent, c.end, cl.end);
+            effect = slice(sent, cl.end, sent.end);
+          }
         } else {
-          const cl = clauseAt(sent, c.end);
-          cause = slice(sent, c.end, cl.end);
-          effect = slice(sent, cl.end, sent.end);
+          effect = slice(sent, prevEnd, c.start);
+          cause = slice(sent, c.end, nextStart);
         }
       } else {
-        effect = slice(sent, sent.start, c.start);
-        cause = slice(sent, c.end, sent.end);
+        cause = slice(sent, prevEnd, c.start);
+        effect = slice(sent, c.end, sent.end);
+        if (!strip(cause)) {
+          const prev = sentences[sent.idx - 1];
+          if (prev && prev.paraIdx === sent.paraIdx) cause = prev.text;
+        }
       }
-    } else {
-      cause = slice(sent, sent.start, c.start);
-      effect = slice(sent, c.end, sent.end);
-      if (!strip(cause)) {
-        const prev = sentences[sent.idx - 1];
-        if (prev && prev.paraIdx === sent.paraIdx) cause = prev.text;
+      let A = trimSlot(cause, 'end');
+      let B = trimSlot(effect, 'start');
+      const certain = CERTAIN_MARKERS.some((m) => effect.includes(m)) || /只要.+就/.test(effect);
+      if (certain) {
+        // 「只要 X，(…)就一定 Y」：X 是前提，Y 是被寫成必然的結果。
+        const parts = effect.split(CLAUSE_PUNCT).map(strip).filter(Boolean);
+        const yi = parts.findIndex((x) => CERTAIN_MARKERS.some((m) => x.includes(m)) || x.includes('就'));
+        if (yi >= 0) B = trimSlot(parts[yi], 'start');
+        const cond = effect.match(/只要([^，,；;。！？!?]+?)(?:[，,]|就)/);
+        if (cond && strip(cond[1])) A = trimSlot(cond[1], 'start');
       }
-    }
-    const A = trimSlot(cause, 'end');
-    const B = trimSlot(effect, 'start');
-    if (!A || !B) continue;
+      if (!A || !B) return;
 
-    const hasNumber = st.some((t) => has(t, 'NUMBER'));
-    const timeOnly = SEQ_MARKERS.some((m) => sent.text.includes(m) || cause.includes(m));
-    const short = strip(cause).length <= CONFIG.causal.shortLen && strip(effect).length <= CONFIG.causal.shortLen;
-    const linked = sharesContent(cause, effect);
-    if (!timeOnly && !(short && !linked)) continue;
+      const hasNumber = st.some((t) => has(t, 'NUMBER'));
+      const timeOnly = SEQ_MARKERS.some((m) => sent.text.includes(m) || cause.includes(m));
+      const short = strip(cause).length <= CONFIG.causal.shortLen && strip(effect).length <= CONFIG.causal.shortLen;
+      const linked = sharesContent(cause, effect);
+      if (!timeOnly && !certain && !(short && !linked)) return;
 
-    let sev = CONFIG.base.CAUSAL_JUMP * c.weight + bonus(causal.length);
-    if (timeOnly) sev += CONFIG.causal.timeOnlyBonus;
-    if (hasNumber) sev -= CONFIG.counterPenalty;
-    out.push(finding('CAUSAL_JUMP', sev, causal.map(span), { X: c.text, A, B, S: trimSlot(sent.text, 'start') }, sent.idx, { timeOnly }));
+      let sev = CONFIG.base.CAUSAL_JUMP * c.weight + bonus(causal.length);
+      if (timeOnly) sev += CONFIG.causal.timeOnlyBonus;
+      if (certain) sev += CONFIG.causal.certainBonus;
+      else if (hasNumber) sev -= CONFIG.counterPenalty;
+      const f = finding('CAUSAL_JUMP', sev, causal.map(span), { X: c.text, A, B, S: trimSlot(sent.text, 'start') }, sent.idx, { timeOnly, certain });
+      if (!best || f.severity > best.severity) best = f;
+    });
+    if (best) out.push(best);
   }
   return out;
 }
@@ -358,8 +380,31 @@ export function GOAL_CONFLICT(tokens, sentences) {
   return out;
 }
 
+// ---------------------------------------------------------------- 8
+// 定義不符：子句中用了已 /def 的詞，也拿出了依據（數字或因果詞），
+// 但依據裡完全沒有出現定義的內容——等於用另一套標準下結論。
+export function DEF_MISMATCH(tokens, sentences) {
+  const out = [];
+  const bs = bySentence(tokens);
+  for (const sent of sentences) {
+    const st = bs.get(sent.idx) || [];
+    for (const t of st) {
+      if (!has(t, 'DEFINED') || !t.def) continue;
+      const cl = clauseAt(sent, t.start);
+      const hasBasis = st.some((x) => x.start >= cl.start && x.end <= cl.end && (has(x, 'NUMBER') || has(x, 'CAUSAL')));
+      if (!hasBasis) continue;
+      const rest = sent.text.slice(0, t.start - sent.start) + sent.text.slice(t.end - sent.start);
+      if (!bigrams(t.def).size || sharesContent(t.def, rest)) continue;
+      const sev = CONFIG.base.DEF_MISMATCH * (t.weight || 1);
+      out.push(finding('DEF_MISMATCH', sev, [span(t)], { X: t.text, D: t.def, S: quoteClause(sent, t) }, sent.idx));
+      break;
+    }
+  }
+  return out;
+}
+
 export const RULES = {
-  OVERGENERALIZE, CAUSAL_JUMP, UNDEFINED_TERM, FALSE_BINARY, MINDREAD, EMOTION_AS_FACT, GOAL_CONFLICT,
+  OVERGENERALIZE, CAUSAL_JUMP, UNDEFINED_TERM, FALSE_BINARY, MINDREAD, EMOTION_AS_FACT, GOAL_CONFLICT, DEF_MISMATCH,
 };
 
 /** 跑全部規則，依 severity 由高到低排序。 */

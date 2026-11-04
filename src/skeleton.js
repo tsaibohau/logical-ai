@@ -43,7 +43,7 @@ export function pickSkeleton(text, tokens, sentences) {
     const acts = toks.filter((t) => t.tags.includes('ACTION'));
     if (!nums.length && !times.length && !acts.length) continue;
     let penalty = 0;
-    for (const [g, p] of Object.entries(PENALTY)) if (toks.some((t) => t.tags.includes(g) && !t.tags.includes('DEFINED'))) penalty += p;
+    for (const [g, p] of Object.entries(PENALTY)) if (toks.some((t) => t.tags.includes(g))) penalty += p; // 已定義的評價詞仍是評價，不是事實
     const info = nums.length * 2 + times.length * 2 + acts.length;
     const score = info * 10 - penalty * 10 + (u.whole ? 1 : 0);
     const tu = trimUnit(text, u);
